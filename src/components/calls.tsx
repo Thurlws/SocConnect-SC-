@@ -33,7 +33,7 @@ export function RoomCard({ room, showSociety }: { room: CallRoom; showSociety?: 
         <p className="truncate text-xs text-muted-foreground">{room.description}</p>
       </div>
       {people.length > 0 ? (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2" title="Simulated demo participants" aria-label={`${people.length} simulated demo participants`}>
           <div className="flex -space-x-2">
             {people.map((p) => <span key={p} title={p} className="flex size-6 items-center justify-center rounded-full border-2 border-card bg-muted text-[9px] font-semibold">{initials(p)}</span>)}
           </div>

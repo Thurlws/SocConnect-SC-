@@ -4,7 +4,7 @@ import { useDemo } from "@/lib/demo-store";
 import { callRooms } from "@/data/calls";
 import { DEMO_TODAY } from "@/data/mock";
 import { pageHead } from "@/lib/seo";
-import { EmptyState } from "@/components/cards";
+import { DemoBadge, EmptyState } from "@/components/cards";
 import { MeetingCard, RecapCard, RoomCard, ScheduleCallDialog } from "@/components/calls";
 import { Button } from "@/components/ui/button";
 
@@ -26,6 +26,7 @@ function CallsPage() {
         <div>
           <h1 className="font-display text-3xl font-semibold tracking-tight">Calls</h1>
           <p className="mt-1 text-muted-foreground">Hop into a room, join a scheduled call, and catch up with AI recaps — no Zoom links needed.</p>
+          <p className="mt-2 flex items-center gap-2 text-xs text-muted-foreground"><DemoBadge />Your camera and mic are real, but everyone else in a room is simulated. Real calls between members need a media provider, which isn't connected yet.</p>
         </div>
         {joinedSocieties.length > 0 && <ScheduleCallDialog />}
       </div>

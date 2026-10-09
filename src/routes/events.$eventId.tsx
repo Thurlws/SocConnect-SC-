@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { useDemo } from "@/lib/demo-store";
 import { events as baseEvents } from "@/data/mock";
 import { formatDate, daysUntil } from "@/lib/format";
+import { downloadIcs } from "@/lib/ics";
 import { pageHead } from "@/lib/seo";
 import { SocietyAvatar, accentClasses } from "@/components/society-avatar";
 import { EventCard } from "@/components/cards";
@@ -22,7 +23,7 @@ export const Route = createFileRoute("/events/$eventId")({
 
 function EventPage() {
   const { eventId } = Route.useParams();
-  const { getEvent, getSociety, isRegistered, toggleRegistration, attendeeCount, events } = useDemo();
+  const { getEvent, getSociety, isRegistered, registerForEvent, cancelRegistration, attendeeCount, eventAvailability, events } = useDemo();
   const e = getEvent(eventId);
   if (!e) {
     return (
@@ -35,14 +36,15 @@ function EventPage() {
   const s = getSociety(e.societyId)!;
   const reg = isRegistered(e.id);
   const count = attendeeCount(e);
-  const full = e.capacity !== undefined && count >= e.capacity && !reg;
+  const availability = eventAvailability(e);
   const until = daysUntil(e.date);
   const related = events.filter((x) => x.id !== e.id && (x.societyId === e.societyId || x.tags.some((t) => e.tags.includes(t)))).slice(0, 3);
 
   const toggle = () => {
-    toggleRegistration(e.id);
-    if (reg) toast("Registration cancelled");
-    else toast.success(full ? "Added to the waitlist" : "You're registered! See you there.");
+    const o = reg ? cancelRegistration(e.id) : registerForEvent(e.id);
+    if (!o.ok) toast.error(o.error);
+    else if (reg) toast("Registration cancelled");
+    else toast.success("You're registered! See you there.");
   };
 
   return (
@@ -71,11 +73,13 @@ function EventPage() {
               <li className="flex gap-3"><Users className="size-4 text-primary" /><span className="font-medium">{count} going{e.capacity ? ` · ${Math.max(e.capacity - count, 0)} spots left` : ""}</span></li>
             </ul>
             {e.capacity && <Progress value={Math.min((count / e.capacity) * 100, 100)} className="mt-4 h-1.5" />}
-            <Button className="mt-5 w-full" size="lg" variant={reg ? "outline" : "default"} onClick={toggle}>
-              {reg ? <><Check />Registered — cancel</> : full ? "Join waitlist" : "Register"}
+            <Button className="mt-5 w-full" size="lg" variant={reg ? "outline" : "default"} onClick={toggle} disabled={availability === "past" || availability === "full"}>
+              {availability === "past" ? (reg ? "Event ended · you were registered" : "This event has ended")
+                : reg ? <><Check />Registered — cancel</> : availability === "full" ? "Event full" : "Register"}
             </Button>
-            {reg && (
-              <Button variant="ghost" className="mt-2 w-full" onClick={() => toast("Calendar export arrives with the backend phase")}><CalendarPlus />Add to calendar</Button>
+            {availability === "full" && <p className="mt-2 text-center text-xs text-muted-foreground">No spots left. There's no waitlist in this prototype.</p>}
+            {reg && availability !== "past" && (
+              <Button variant="ghost" className="mt-2 w-full" onClick={() => downloadIcs(e, s.name)}><CalendarPlus />Add to calendar (.ics)</Button>
             )}
             <p className="mt-3 text-center text-[11px] text-muted-foreground">Demo registration — stored on this device only.</p>
           </div>
