@@ -16,6 +16,7 @@ import type {
   Notification,
   Resource,
   Society,
+  SupportRequest,
   User,
 } from "@/lib/types";
 
@@ -273,6 +274,39 @@ export const initialRequests: MembershipRequest[] = [
   { id: "req1", societyId: "compsoc", name: "Maya Patel", course: "BA Economics", message: "I'd love to learn to code — complete beginner!", requestedAt: "2026-10-11T10:00:00" },
   { id: "req2", societyId: "compsoc", name: "Ethan Clarke", course: "BSc Physics", message: "Interested in the hack nights and Python workshops.", requestedAt: "2026-10-10T16:20:00" },
   { id: "req3", societyId: "compsoc", name: "Zara Ahmed", course: "BSc Data Science", message: "", requestedAt: "2026-10-09T13:45:00" },
+];
+
+/** Member → committee requests. Alex's photo request shows a resolved one; CompSoc's fill Jordan's inbox. */
+export const initialSupportRequests: SupportRequest[] = [
+  { id: "sr1", societyId: "compsoc", title: "Borrow a Raspberry Pi kit for a side project", category: "equipment", priority: "normal", status: "in_progress",
+    description: "Could I borrow one of the society Raspberry Pi kits for about two weeks? It's for a small home-automation project I'd like to demo at Hack Night.",
+    submittedBy: "u-tom", submitterName: "Tom Becker", assignedTo: "Sam Okafor", createdAt: "2026-10-09T11:05:00", updatedAt: "2026-10-10T16:30:00",
+    activity: [
+      { id: "sr1-a1", at: "2026-10-09T11:05:00", actor: "Tom Becker", kind: "created", text: "Submitted the request" },
+      { id: "sr1-a2", at: "2026-10-09T15:20:00", actor: "Jordan Lee", kind: "assigned", text: "Assigned to Sam Okafor" },
+      { id: "sr1-a3", at: "2026-10-10T16:25:00", actor: "Sam Okafor", kind: "status", text: "Moved to In progress" },
+      { id: "sr1-a4", at: "2026-10-10T16:30:00", actor: "Sam Okafor", kind: "comment", text: "We have two kits free. Can you collect one from the Engineering Building on Wednesday after 17:00?" },
+    ] },
+  { id: "sr2", societyId: "compsoc", title: "Is Hack Night step-free accessible?", category: "event", priority: "high", status: "open",
+    description: "I use a wheelchair. Is Lab 3 step-free, and is there an accessible toilet on that floor? I'd like to know before Wednesday.",
+    submittedBy: "u-aisha", submitterName: "Aisha Bello", createdAt: "2026-10-11T18:40:00", updatedAt: "2026-10-11T18:40:00",
+    activity: [{ id: "sr2-a1", at: "2026-10-11T18:40:00", actor: "Aisha Bello", kind: "created", text: "Submitted the request" }] },
+  { id: "sr3", societyId: "compsoc", title: "Recording of the Rust intro talk?", category: "question", priority: "low", status: "resolved",
+    description: "I missed the Rust talk last week. Was it recorded?", resolution: "Yes. The slides and the recording are in Resources → \"Rust intro — slides & recording\".",
+    submittedBy: "u-ethan", submitterName: "Ethan Clarke", assignedTo: "Priya Nair", createdAt: "2026-10-07T09:15:00", updatedAt: "2026-10-08T15:35:00",
+    activity: [
+      { id: "sr3-a1", at: "2026-10-07T09:15:00", actor: "Ethan Clarke", kind: "created", text: "Submitted the request" },
+      { id: "sr3-a2", at: "2026-10-07T12:00:00", actor: "Jordan Lee", kind: "assigned", text: "Assigned to Priya Nair" },
+      { id: "sr3-a3", at: "2026-10-08T15:35:00", actor: "Priya Nair", kind: "status", text: "Resolved" },
+    ] },
+  { id: "sr4", societyId: "photo", title: "Camera loan for the golden hour walk", category: "equipment", priority: "normal", status: "resolved",
+    description: "I only have my phone. Is there a society camera I could borrow for the photo walk on the 17th?", resolution: "We've reserved a mirrorless kit for you. Collect it from Noah at the Main Gate 10 minutes before the walk.",
+    submittedBy: "u-alex", submitterName: "Alex Morgan", assignedTo: "Noah Fitzgerald", createdAt: "2026-10-08T10:20:00", updatedAt: "2026-10-09T13:10:00",
+    activity: [
+      { id: "sr4-a1", at: "2026-10-08T10:20:00", actor: "Alex Morgan", kind: "created", text: "Submitted the request" },
+      { id: "sr4-a2", at: "2026-10-08T17:45:00", actor: "Noah Fitzgerald", kind: "assigned", text: "Assigned to Noah Fitzgerald" },
+      { id: "sr4-a3", at: "2026-10-09T13:10:00", actor: "Noah Fitzgerald", kind: "status", text: "Resolved" },
+    ] },
 ];
 
 export const proposals: CollaborationProposal[] = [

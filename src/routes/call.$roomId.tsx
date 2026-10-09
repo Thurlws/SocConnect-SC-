@@ -7,7 +7,8 @@ import { useDemo } from "@/lib/demo-store";
 import { callScript, roomPresence } from "@/data/calls";
 import { demoNowIso } from "@/lib/format";
 import { summarizeCall } from "@/lib/calls.functions";
-import type { TranscriptLine } from "@/lib/types";
+import { fallbackSummary } from "@/lib/call-recap-fallback";
+import type { CallSummary, TranscriptLine } from "@/lib/types";
 import { SocietyAvatar, accentClasses } from "@/components/society-avatar";
 import { EmptyState, DemoBadge } from "@/components/cards";
 import { JoinButton } from "@/components/join-button";
@@ -33,7 +34,9 @@ export const Route = createFileRoute("/call/$roomId")({
 const initials = (n: string) => n.split(" ").map((p) => p[0]).join("");
 const clock = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 
-type SR = { continuous: boolean; interimResults: boolean; lang: string; start: () => void; stop: () => void; onresult: ((e: any) => void) | null; onend: (() => void) | null; onerror: ((e: any) => void) | null };
+type SREvent = { resultIndex: number; results: ArrayLike<{ isFinal: boolean; 0: { transcript: string } }> };
+type SR = { continuous: boolean; interimResults: boolean; lang: string; start: () => void; stop: () => void; onresult: ((e: SREvent) => void) | null; onend: (() => void) | null; onerror: ((e: { error: string }) => void) | null };
+type SRWindow = Window & { SpeechRecognition?: new () => SR; webkitSpeechRecognition?: new () => SR };
 
 function CallPage() {
   const { roomId } = Route.useParams();
@@ -112,22 +115,23 @@ function CallPage() {
   // Live speech-to-text (browser)
   useEffect(() => {
     if (phase !== "live") return;
-    const Ctor = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const Ctor = (window as SRWindow).SpeechRecognition ?? (window as SRWindow).webkitSpeechRecognition;
     if (!Ctor) { setSrSupported(false); return; }
     const rec: SR = new Ctor();
     rec.continuous = true;
     rec.interimResults = true;
     rec.lang = "en-IE";
-    rec.onresult = (e: any) => {
+    rec.onresult = (e) => {
       let partial = "";
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const r = e.results[i];
+        if (!r) continue;
         if (r.isFinal) { const t = r[0].transcript.trim(); if (t) addLine(user.name, t); } else partial += r[0].transcript;
       }
       setInterim(partial);
       setSpeaking(partial ? user.name : null);
     };
-    rec.onerror = (e: any) => { if (e.error === "not-allowed") setSrSupported(false); };
+    rec.onerror = (e) => { if (e.error === "not-allowed") setSrSupported(false); };
     rec.onend = () => { if (micRef.current && recRef.current === rec) try { rec.start(); } catch { /* already running */ } };
     recRef.current = rec;
     if (micRef.current) try { rec.start(); } catch { /* noop */ }
@@ -138,7 +142,7 @@ function CallPage() {
   useEffect(() => {
     const rec = recRef.current;
     if (!rec) return;
-    try { micOn ? rec.start() : rec.stop(); } catch { /* noop */ }
+    try { if (micOn) rec.start(); else rec.stop(); } catch { /* noop */ }
   }, [micOn]);
 
   useEffect(() => { endRef.current?.scrollIntoView({ block: "nearest" }); }, [transcript, interim]);
@@ -153,15 +157,17 @@ function CallPage() {
     recRef.current = null;
     if (transcript.length === 0) { toast.message("Call ended — nothing was said, so there's no recap."); navigate({ to: "/calls" }); return; }
     setPhase("summarizing");
+    let summary: CallSummary;
     try {
-      const summary = await summarize({ data: { society: society.name, title, transcript } });
-      const participants = [user.name, ...others];
-      const id = saveRecap({ roomId: room.id, societyId: society.id, title: `${room.name} — ${society.shortName}`, date: demoNowIso(), durationSec: elapsedRef.current, participants, transcript, summary });
-      navigate({ to: "/recaps/$recapId", params: { recapId: id } });
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Couldn't write the recap.");
-      setPhase("live");
+      summary = await summarize({ data: { society: society.name, title, transcript } });
+    } catch {
+      // Server unreachable: still save a keyword recap so leaving a call never loses the transcript.
+      summary = fallbackSummary(transcript, elapsedRef.current);
     }
+    if (summary.source === "fallback") toast.message("AI summary unavailable, so we saved a basic recap from the transcript.");
+    const participants = [user.name, ...others];
+    const id = saveRecap({ roomId: room.id, societyId: society.id, title: `${room.name} — ${society.shortName}`, date: demoNowIso(), durationSec: elapsedRef.current, participants, transcript, summary });
+    navigate({ to: "/recaps/$recapId", params: { recapId: id } });
   };
 
   if (phase === "lobby") {

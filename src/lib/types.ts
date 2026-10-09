@@ -130,6 +130,37 @@ export interface ResolvedRequest extends MembershipRequest {
   resolvedBy: string;
 }
 
+/** Lifecycle: open → in_progress → resolved (see src/lib/support-requests.ts for allowed moves). */
+export type SupportRequestStatus = "open" | "in_progress" | "resolved";
+export type SupportRequestCategory = "question" | "membership" | "event" | "equipment" | "finance" | "other";
+export type SupportRequestPriority = "low" | "normal" | "high";
+
+export interface SupportRequestActivity {
+  id: string;
+  at: string; // ISO datetime
+  actor: string;
+  kind: "created" | "status" | "assigned" | "comment";
+  text: string;
+}
+
+/** A member's request to a society committee (not a paid event ticket). */
+export interface SupportRequest {
+  id: string;
+  societyId: string;
+  title: string;
+  description: string;
+  category: SupportRequestCategory;
+  priority: SupportRequestPriority;
+  status: SupportRequestStatus;
+  submittedBy: string; // user id
+  submitterName: string;
+  assignedTo?: string | undefined; // committee member name
+  resolution?: string | undefined;
+  createdAt: string;
+  updatedAt: string;
+  activity: SupportRequestActivity[];
+}
+
 export interface CallRoom {
   id: string;
   societyId: string;
@@ -150,6 +181,8 @@ export interface TranscriptLine {
 }
 
 export interface CallSummary {
+  /** "fallback" = keyword-based recap written without the AI (see src/lib/call-recap-fallback.ts). */
+  source?: "ai" | "fallback" | undefined;
   overview: string;
   topics: string[];
   decisions: string[];

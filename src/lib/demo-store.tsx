@@ -10,13 +10,14 @@ import {
   initialNotifications,
   initialRegistrations,
   initialRequests,
+  initialSupportRequests,
   societies as baseSocieties,
 } from "@/data/mock";
-import type { CallRecap, CallRoom, Event, MembershipStatus, Role } from "@/lib/types";
+import type { CallRecap, CallRoom, Event, MembershipStatus, Role, SupportRequest, SupportRequestStatus } from "@/lib/types";
 import { demoNowIso } from "@/lib/format";
 import { callRooms, initialMeetings, initialRecaps } from "@/data/calls";
 import * as rules from "@/lib/demo-rules";
-import type { AnnouncementInput, DemoContext, DemoState, EventInput, NotificationPrefs, Outcome } from "@/lib/demo-rules";
+import type { AnnouncementInput, DemoContext, DemoState, EventInput, NotificationPrefs, Outcome, SupportRequestInput } from "@/lib/demo-rules";
 
 /**
  * Central demo state. This is the single seam the backend phase replaces:
@@ -54,6 +55,7 @@ const initialState = (): DemoState => ({
   prefs: { announcements: true, events: true, discussions: false, email: false },
   meetings: [...initialMeetings],
   recaps: [...initialRecaps],
+  supportRequests: [...initialSupportRequests],
 });
 
 // v2: per-user memberships, registrations and notifications (v1 data is ignored).
@@ -188,6 +190,17 @@ function useDemoValue() {
 
   return {
     loaded,
+    // Member → committee requests. Rules (visibility, committee-only changes) live in demo-rules.ts.
+    supportRequests: state.supportRequests,
+    getSupportRequest: (id: string) => state.supportRequests.find((r) => r.id === id),
+    canManageRequest: (r: Pick<SupportRequest, "societyId">) => rules.canManageSociety(user, r.societyId),
+    canViewRequest: (r: SupportRequest) => rules.canViewSupportRequest(user, r),
+    submitSupportRequest: (input: SupportRequestInput) => run((s, a) => rules.submitSupportRequest(s, a, input, ctx)),
+    assignSupportRequest: (id: string, assignee: string | undefined) =>
+      run((s, a) => rules.assignSupportRequest(s, a, id, assignee, ctx)),
+    setSupportRequestStatus: (id: string, to: SupportRequestStatus, resolution?: string) =>
+      run((s, a) => rules.setSupportRequestStatus(s, a, id, to, resolution, ctx)),
+    commentOnSupportRequest: (id: string, text: string) => run((s, a) => rules.commentOnSupportRequest(s, a, id, text, ctx)),
     meetings: state.meetings,
     recaps: state.recaps,
     getRoom,
