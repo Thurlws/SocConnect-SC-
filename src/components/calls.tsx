@@ -2,10 +2,9 @@ import { Link } from "@tanstack/react-router";
 import { CalendarClock, FileText, Headphones, Plus, QrCode, Radio, Share2, Video } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useDemo } from "@/lib/demo-store";
+import { useData } from "@/lib/api/store";
 import { useCallMode } from "@/lib/use-call-mode";
-import { roomPresence } from "@/data/calls";
-import { DEMO_TODAY } from "@/data/mock";
+import { todayIso } from "@/lib/format";
 import { formatDate } from "@/lib/format";
 import type { CallRecap, CallRoom } from "@/lib/types";
 import { SocietyAvatar, accentClasses } from "@/components/society-avatar";
@@ -18,14 +17,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from "@/lib/utils";
 import { InviteDialog } from "@/components/invite-dialog";
 
-const initials = (n: string) => n.split(" ").map((p) => p[0]).join("");
 
 export function RoomCard({ room, showSociety }: { room: CallRoom; showSociety?: boolean }) {
-  const { getSociety } = useDemo();
+  const { getSociety } = useData();
   const s = getSociety(room.societyId);
   const mode = useCallMode();
-  // Scripted presence only makes sense in simulated mode; live rooms hold whoever actually joins.
-  const people = mode === "simulated" ? roomPresence(room.id) : [];
   if (!s) return null;
   return (
     <div className="card-interactive flex items-center gap-3 rounded-xl border bg-card p-4 shadow-soft">
@@ -38,15 +34,7 @@ export function RoomCard({ room, showSociety }: { room: CallRoom; showSociety?: 
         </p>
         <p className="truncate text-xs text-muted-foreground">{room.description}</p>
       </div>
-      {people.length > 0 ? (
-        <div className="flex items-center gap-2" title="Simulated demo participants" aria-label={`${people.length} simulated demo participants`}>
-          <div className="flex -space-x-2">
-            {people.map((p) => <span key={p} title={p} className="flex size-6 items-center justify-center rounded-full border-2 border-card bg-muted text-[9px] font-semibold">{initials(p)}</span>)}
-          </div>
-          <span className="flex items-center gap-1 text-xs font-medium text-success"><span className="size-1.5 animate-pulse rounded-full bg-success" />{people.length}</span>
-        </div>
-      ) : mode === "live" ? <span className="flex items-center gap-1 text-xs font-medium text-success"><Radio className="size-3.5" />Live</span>
-        : mode === "simulated" ? <span className="text-xs text-muted-foreground">Empty</span> : null}
+      {mode === "live" ? <span className="flex items-center gap-1 text-xs font-medium text-success"><Radio className="size-3.5" />Live</span> : null}
       <InviteDialog roomId={room.id} roomName={room.name} societyName={s.name}>
         <Button size="icon" variant="ghost" className="size-8 shrink-0" aria-label={`Share invite for ${room.name}`}><QrCode className="size-4" /></Button>
       </InviteDialog>
@@ -56,17 +44,17 @@ export function RoomCard({ room, showSociety }: { room: CallRoom; showSociety?: 
 }
 
 export function MeetingCard({ meeting }: { meeting: CallRoom }) {
-  const { getSociety } = useDemo();
+  const { getSociety } = useData();
   const s = getSociety(meeting.societyId);
   if (!s) return null;
-  const today = meeting.date === DEMO_TODAY;
+  const today = meeting.date === todayIso();
   return (
     <div className="flex items-center gap-3 rounded-xl border bg-card p-4 shadow-soft">
       <SocietyAvatar society={s} size="sm" />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold">{meeting.name}</p>
         <p className="truncate text-xs text-muted-foreground">
-          <CalendarClock className="mr-1 inline size-3" />{today ? "Today" : formatDate(meeting.date ?? DEMO_TODAY)} · {meeting.start} · {s.shortName}{meeting.host ? ` · hosted by ${meeting.host}` : ""}
+          <CalendarClock className="mr-1 inline size-3" />{today ? "Today" : formatDate(meeting.date ?? todayIso())} · {meeting.start} · {s.shortName}{meeting.host ? ` · hosted by ${meeting.host}` : ""}
         </p>
       </div>
       <div className="flex items-center gap-1">
@@ -80,7 +68,7 @@ export function MeetingCard({ meeting }: { meeting: CallRoom }) {
 }
 
 export function RecapCard({ recap }: { recap: CallRecap }) {
-  const { getSociety } = useDemo();
+  const { getSociety } = useData();
   const s = getSociety(recap.societyId);
   return (
     <Link to="/recaps/$recapId" params={{ recapId: recap.id }} className="card-interactive block rounded-xl border bg-card p-4 shadow-soft">
@@ -96,13 +84,16 @@ export function RecapCard({ recap }: { recap: CallRecap }) {
 }
 
 export function ScheduleCallDialog({ defaultSocietyId }: { defaultSocietyId?: string }) {
-  const { joinedSocieties, scheduleMeeting, user } = useDemo();
+  const { joinedSocieties, scheduleMeeting, committeeSeats } = useData();
+  const mine = joinedSocieties.filter((s) => committeeSeats.some((c) => c.slug === s.id));
   const [open, setOpen] = useState(false);
-  const [societyId, setSocietyId] = useState(defaultSocietyId ?? joinedSocieties[0]?.id ?? "");
+  const [societyId, setSocietyId] = useState(defaultSocietyId ?? mine[0]?.id ?? "");
   const [name, setName] = useState("");
-  const [date, setDate] = useState(DEMO_TODAY);
+  const [date, setDate] = useState(() => todayIso());
   const [start, setStart] = useState("18:00");
   const [description, setDescription] = useState("");
+  const [busy, setBusy] = useState(false);
+  if (!mine.length) return null;
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild><Button><Plus />Schedule a call</Button></DialogTrigger>
@@ -110,10 +101,13 @@ export function ScheduleCallDialog({ defaultSocietyId }: { defaultSocietyId?: st
         <DialogHeader><DialogTitle>Schedule a call</DialogTitle></DialogHeader>
         <form
           className="space-y-4"
-          onSubmit={(e) => {
+          onSubmit={async (e) => {
             e.preventDefault();
-            if (!name.trim() || !societyId) return;
-            scheduleMeeting({ societyId, name: name.trim(), date, start, description: description.trim() || "Society call", host: user.name });
+            if (!name.trim() || !societyId || busy) return;
+            setBusy(true);
+            const o = await scheduleMeeting({ societyId, name: name.trim(), date, start, description: description.trim() || "Society call" });
+            setBusy(false);
+            if (!o.ok) { toast.error(o.error); return; }
             toast.success("Call scheduled — members have been notified");
             setOpen(false);
             setName(""); setDescription("");
@@ -123,7 +117,7 @@ export function ScheduleCallDialog({ defaultSocietyId }: { defaultSocietyId?: st
             <Label>Society</Label>
             <Select value={societyId} onValueChange={setSocietyId}>
               <SelectTrigger><SelectValue placeholder="Choose a society" /></SelectTrigger>
-              <SelectContent>{joinedSocieties.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
+              <SelectContent>{mine.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div className="space-y-1.5"><Label htmlFor="call-name">Title</Label><Input id="call-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Weekly committee catch-up" required /></div>
@@ -132,7 +126,7 @@ export function ScheduleCallDialog({ defaultSocietyId }: { defaultSocietyId?: st
             <div className="space-y-1.5"><Label htmlFor="call-time">Time</Label><Input id="call-time" type="time" value={start} onChange={(e) => setStart(e.target.value)} required /></div>
           </div>
           <div className="space-y-1.5"><Label htmlFor="call-desc">What's it about?</Label><Textarea id="call-desc" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} /></div>
-          <DialogFooter><Button type="submit" disabled={!societyId}>Schedule</Button></DialogFooter>
+          <DialogFooter><Button type="submit" disabled={!societyId || busy}>Schedule</Button></DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

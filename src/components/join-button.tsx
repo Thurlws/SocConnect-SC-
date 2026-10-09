@@ -1,21 +1,22 @@
 import { Check, Clock, Plus } from "lucide-react";
 import { toast } from "sonner";
-import { useDemo } from "@/lib/demo-store";
-import type { Outcome } from "@/lib/demo-rules";
+import { useData } from "@/lib/api/store";
+import type { Outcome } from "@/lib/validation";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import type { Society } from "@/lib/types";
 
-const report = (o: Outcome, message: string, success = false) => {
+const report = async (p: Promise<Outcome>, message: string, success = false) => {
+  const o = await p;
   if (!o.ok) toast.error(o.error);
   else if (success) toast.success(message);
   else toast(message);
 };
 
 export function JoinButton({ society, size = "sm", full }: { society: Society; size?: "sm" | "default"; full?: boolean }) {
-  const { membership, joinSociety, leaveSociety, cancelRequest } = useDemo();
+  const { membership, joinSociety, leaveSociety, cancelRequest } = useData();
   const status = membership(society.id);
   const cls = full ? "w-full" : undefined;
   if (status === "member")

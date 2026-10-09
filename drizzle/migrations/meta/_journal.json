@@ -1,0 +1,48 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1791584071249,
+      "tag": "0000_identity_roles_societies",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791584729692,
+      "tag": "0001_communication_events_requests",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791585031899,
+      "tag": "0002_restrict_function_execute",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791585867006,
+      "tag": "0003_calls_and_recaps",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791586799748,
+      "tag": "0004_tighten_read_policies",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791587566334,
+      "tag": "0005_society_recommendations_ai",
+      "breakpoints": true
+    }
+  ]
+}

@@ -2,7 +2,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { ArrowRight, Check, Inbox, MessageSquarePlus, UserRound } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
-import { useDemo } from "@/lib/demo-store";
+import { useData } from "@/lib/api/store";
 import { timeAgo } from "@/lib/format";
 import {
   REQUEST_STATUSES,
@@ -106,7 +106,7 @@ export function RequestRow({
   request: SupportRequest;
   showSubmitter?: boolean;
 }) {
-  const { getSociety } = useDemo();
+  const { getSociety } = useData();
   const s = getSociety(r.societyId);
   return (
     <Link
@@ -150,7 +150,7 @@ export function NewRequestDialog({
   defaultSocietyId?: string;
   trigger?: ReactNode;
 }) {
-  const { joinedSocieties, submitSupportRequest } = useDemo();
+  const { joinedSocieties, submitSupportRequest } = useData();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const blank = {
@@ -198,9 +198,9 @@ export function NewRequestDialog({
         ) : (
           <form
             className="space-y-4"
-            onSubmit={(e) => {
+            onSubmit={async (e) => {
               e.preventDefault();
-              const o = submitSupportRequest({
+              const o = await submitSupportRequest({
                 societyId: f.societyId,
                 category: f.category,
                 priority: f.priority,
@@ -308,7 +308,7 @@ export function NewRequestDialog({
 
 /** Compact inbox preview for the committee dashboard. */
 export function CommitteeRequestsSummary({ societyId }: { societyId: string }) {
-  const { supportRequests } = useDemo();
+  const { supportRequests } = useData();
   const mine = supportRequests.filter((r) => r.societyId === societyId);
   const open = mine.filter((r) => r.status === "open").length;
   const inProgress = mine.filter((r) => r.status === "in_progress").length;

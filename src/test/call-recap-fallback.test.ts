@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { callScript } from "@/data/calls";
+import { callScript } from "./call-script";
 import { fallbackAnswer, fallbackSummary } from "@/lib/call-recap-fallback";
 
 const transcript = callScript("CompSoc", ["Priya Nair", "Sam Okafor", "Jordan Lee"]).map(

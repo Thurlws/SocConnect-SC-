@@ -1,14 +1,13 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
-  Bell, CalendarDays, ChevronsLeft, Compass, Home, Inbox, LayoutDashboard, Menu, MessageSquareText, MessagesSquare, RotateCcw, Search, Settings, Users, Waypoints, Repeat, Video,
+  Bell, CalendarDays, ChevronsLeft, Compass, Home, Inbox, LayoutDashboard, Menu, MessageSquareText, MessagesSquare, Search, Settings, Users, Waypoints, Video, LogOut, ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
-import { toast } from "sonner";
-import { useDemo } from "@/lib/demo-store";
+import { useData } from "@/lib/api/store";
+import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { SocietyAvatar } from "@/components/society-avatar";
-import { DemoBadge } from "@/components/cards";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -47,7 +46,7 @@ function Logo({ collapsed }: { collapsed?: boolean }) {
 }
 
 function SidebarBody({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: () => void }) {
-  const { joinedSocieties, user, role } = useDemo();
+  const { joinedSocieties, user, role, committeeSeats } = useData();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const isActive = (to: string) => (to === "/" ? pathname === "/" : pathname.startsWith(to));
   return (
@@ -97,7 +96,7 @@ function SidebarBody({ collapsed, onNavigate }: { collapsed: boolean; onNavigate
         {!collapsed && (
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold">{user.name}</p>
-            <p className="truncate text-xs text-muted-foreground">{role === "committee" ? "Committee · CompSoc" : "Student"}</p>
+            <p className="truncate text-xs text-muted-foreground">{committeeSeats[0] ? `${committeeSeats[0].position} · ${committeeSeats[0].short_name}` : "Student"}</p>
           </div>
         )}
       </div>
@@ -107,7 +106,7 @@ function SidebarBody({ collapsed, onNavigate }: { collapsed: boolean; onNavigate
 
 function GlobalSearch() {
   const [open, setOpen] = useState(false);
-  const { societies, events } = useDemo();
+  const { societies, events } = useData();
   const navigate = useNavigate();
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
@@ -129,7 +128,7 @@ function GlobalSearch() {
       <CommandDialog open={open} onOpenChange={setOpen}>
         <CommandInput placeholder="Search societies, events, tags…" />
         <CommandList>
-          <CommandEmpty>No matches in the demo data.</CommandEmpty>
+          <CommandEmpty>No matches.</CommandEmpty>
           <CommandGroup heading="Societies">
             {societies.map((s) => (
               <CommandItem key={s.id} value={`${s.name} ${s.shortName} ${s.tags.join(" ")}`} onSelect={() => { setOpen(false); navigate({ to: "/societies/$societyId", params: { societyId: s.id } }); }}>
@@ -155,7 +154,7 @@ function GlobalSearch() {
 }
 
 function Notifications() {
-  const { notifications, unreadCount, markRead, markAllRead } = useDemo();
+  const { notifications, unreadCount, markRead, markAllRead } = useData();
   const navigate = useNavigate();
   return (
     <Popover>
@@ -196,7 +195,8 @@ function Notifications() {
 }
 
 function UserMenu() {
-  const { user, role, setRole, reset } = useDemo();
+  const { user } = useData();
+  const { email, signOut, access } = useAuth();
   const navigate = useNavigate();
   return (
     <DropdownMenu>
@@ -208,22 +208,12 @@ function UserMenu() {
       <DropdownMenuContent align="end" className="w-64">
         <DropdownMenuLabel>
           <p className="text-sm">{user.name}</p>
-          <p className="text-xs font-normal text-muted-foreground">{user.course}</p>
+          <p className="truncate text-xs font-normal text-muted-foreground">{email}</p>
         </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuLabel className="flex items-center justify-between text-xs font-normal text-muted-foreground">
-          Switch demo account <DemoBadge />
-        </DropdownMenuLabel>
-        <DropdownMenuItem onClick={() => { setRole("student"); toast.success("Now viewing as Alex Morgan (student)"); }}>
-          <Repeat className="size-4" /> Alex Morgan · Student {role === "student" && <span className="ml-auto text-primary">●</span>}
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => { setRole("committee"); toast.success("Now viewing as Jordan Lee (committee)"); navigate({ to: "/committee" }); }}>
-          <Repeat className="size-4" /> Jordan Lee · Committee {role === "committee" && <span className="ml-auto text-primary">●</span>}
-        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => navigate({ to: "/settings" })}><Settings className="size-4" /> Settings</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => { reset(); toast.success("Demo data reset"); }}><RotateCcw className="size-4" /> Reset demo data</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => navigate({ to: "/welcome" })}>Sign out of demo</DropdownMenuItem>
+        {access.is_admin && <DropdownMenuItem onClick={() => navigate({ to: "/admin" })}><ShieldCheck className="size-4" /> Admin</DropdownMenuItem>}
+        <DropdownMenuItem onClick={async () => { await signOut(); navigate({ to: "/welcome" }); }}><LogOut className="size-4" /> Sign out</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -234,7 +224,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const title = titles[pathname] ?? (pathname.startsWith("/societies") ? "Society" : pathname.startsWith("/events") ? "Event" : pathname.startsWith("/requests") ? "Request" : "SocConnect");
-  const { role } = useDemo();
+  const { role } = useData();
 
   return (
     <div className="flex min-h-screen">
