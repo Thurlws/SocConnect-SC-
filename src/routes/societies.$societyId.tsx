@@ -8,6 +8,8 @@ import { pageHead } from "@/lib/seo";
 import { SocietyAvatar, accentClasses } from "@/components/society-avatar";
 import { EventCard, EmptyState } from "@/components/cards";
 import { JoinButton } from "@/components/join-button";
+import { MeetingCard, RecapCard, RoomCard, ScheduleCallDialog } from "@/components/calls";
+import { callRooms } from "@/data/calls";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -28,7 +30,7 @@ const resIcon = { Guide: BookOpen, Link: Link2, Document: FileText, Form: Clipbo
 
 function SocietyPage() {
   const { societyId } = Route.useParams();
-  const { getSociety, membership, announcements, events, messages, postMessage, user } = useDemo();
+  const { getSociety, membership, announcements, events, messages, postMessage, user, meetings, recaps } = useDemo();
   const s = getSociety(societyId)!;
   const isMember = membership(s.id) === "member";
   const a = accentClasses[s.accent];
@@ -64,7 +66,7 @@ function SocietyPage() {
 
       <Tabs defaultValue="overview" className="mt-6">
         <TabsList className="h-auto flex-wrap justify-start bg-transparent p-0">
-          {["overview", "announcements", "discussions", "events", "resources", "members"].map((t) => (
+          {["overview", "announcements", "discussions", "calls", "events", "resources", "members"].map((t) => (
             <TabsTrigger key={t} value={t} className="rounded-full capitalize data-[state=active]:bg-primary-soft data-[state=active]:text-primary data-[state=active]:shadow-none">{t}</TabsTrigger>
           ))}
         </TabsList>
@@ -134,7 +136,7 @@ function SocietyPage() {
                       <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold", m.author === user.name ? "bg-ink text-ink-foreground" : "bg-muted")}>{m.author.split(" ").map((p) => p[0]).join("")}</span>
                       <div>
                         <p className="text-sm"><span className="font-semibold">{m.author}</span> <span className="text-xs text-muted-foreground">{timeAgo(m.createdAt)}</span></p>
-                        <p className="text-sm text-foreground/90">{m.body}</p>
+                        <p className="whitespace-pre-line text-sm text-foreground/90">{m.body}</p>
                       </div>
                     </div>
                   ))}
@@ -147,6 +149,24 @@ function SocietyPage() {
                   <Button type="submit" size="icon" aria-label="Send"><Send /></Button>
                 </form>
               </div>
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="calls" className="mt-6">
+          {!isMember ? <MembersOnly what="Calls" /> : (
+            <div className="space-y-6">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-sm text-muted-foreground">Drop into a room any time, or schedule a call. Every call gets an AI recap.</p>
+                <ScheduleCallDialog defaultSocietyId={s.id} />
+              </div>
+              <div className="grid gap-3 md:grid-cols-2">{callRooms.filter((r) => r.societyId === s.id).map((r) => <RoomCard key={r.id} room={r} />)}</div>
+              {meetings.some((m) => m.societyId === s.id && (m.date ?? "") >= DEMO_TODAY) && (
+                <div><p className="mb-3 text-sm font-semibold">Upcoming calls</p><div className="grid gap-3 md:grid-cols-2">{meetings.filter((m) => m.societyId === s.id && (m.date ?? "") >= DEMO_TODAY).map((m) => <MeetingCard key={m.id} meeting={m} />)}</div></div>
+              )}
+              {recaps.some((r) => r.societyId === s.id) && (
+                <div><p className="mb-3 text-sm font-semibold">Recaps</p><div className="grid gap-3 md:grid-cols-2">{recaps.filter((r) => r.societyId === s.id).map((r) => <RecapCard key={r.id} recap={r} />)}</div></div>
+              )}
             </div>
           )}
         </TabsContent>

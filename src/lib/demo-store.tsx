@@ -21,6 +21,8 @@ import type {
   Society,
 } from "@/lib/types";
 import { demoNowIso } from "@/lib/format";
+import { callRooms, initialMeetings, initialRecaps } from "@/data/calls";
+import type { CallRecap, CallRoom } from "@/lib/types";
 
 /**
  * Central demo state. This is the single seam the backend phase replaces:
@@ -39,6 +41,8 @@ interface DemoState {
   savedProposals: string[];
   interests: string[];
   prefs: { announcements: boolean; events: boolean; discussions: boolean; email: boolean };
+  meetings: CallRoom[];
+  recaps: CallRecap[];
 }
 
 const initialState = (): DemoState => ({
@@ -54,6 +58,8 @@ const initialState = (): DemoState => ({
   savedProposals: [],
   interests: [...demoUsers.student.interests],
   prefs: { announcements: true, events: true, discussions: false, email: true },
+  meetings: [...initialMeetings],
+  recaps: [...initialRecaps],
 });
 
 const KEY = "socconnect-demo-v1";
@@ -160,8 +166,50 @@ function useDemoValue() {
   const editSociety = (id: string, patch: Partial<Society>) =>
     setState((s) => ({ ...s, societyEdits: { ...s.societyEdits, [id]: { ...s.societyEdits[id], ...patch } } }));
 
+  const getRoom = (id: string) => callRooms.find((r) => r.id === id) ?? state.meetings.find((m) => m.id === id);
+
+  const scheduleMeeting = (m: Omit<CallRoom, "id" | "kind">) => {
+    const id = uid("mt");
+    setState((s) => ({
+      ...s,
+      meetings: [...s.meetings, { ...m, id, kind: "meeting" }],
+      notifications: notify(s, `Call scheduled: ${m.name}`, `${baseSocieties.find((x) => x.id === m.societyId)?.shortName} · ${m.date} at ${m.start}`, { to: "/call/$roomId", params: { roomId: id } }),
+    }));
+    return id;
+  };
+
+  const saveRecap = (r: Omit<CallRecap, "id" | "qa" | "shared">) => {
+    const id = uid("rc");
+    setState((s) => ({ ...s, recaps: [{ ...r, id, qa: [], shared: false }, ...s.recaps] }));
+    return id;
+  };
+
+  const updateRecapQa = (id: string, qa: CallRecap["qa"]) =>
+    setState((s) => ({ ...s, recaps: s.recaps.map((r) => (r.id === id ? { ...r, qa } : r)) }));
+
+  const shareRecap = (id: string) =>
+    setState((s) => {
+      const r = s.recaps.find((x) => x.id === id);
+      if (!r) return s;
+      const soc = baseSocieties.find((x) => x.id === r.societyId);
+      const body = `📋 Call recap — ${r.title}\n${r.summary.overview}${r.summary.actionItems.length ? `\nAction items: ${r.summary.actionItems.map((a) => `${a.owner}: ${a.task}`).join("; ")}` : ""}`;
+      return {
+        ...s,
+        recaps: s.recaps.map((x) => (x.id === id ? { ...x, shared: true } : x)),
+        messages: [...s.messages, { id: uid("m"), channelId: `${r.societyId}-general`, author: user.name, body, createdAt: demoNowIso() }],
+        notifications: notify(s, `Call recap shared in ${soc?.shortName}`, r.title, { to: "/recaps/$recapId", params: { recapId: id } }),
+      };
+    });
+
   return {
     loaded,
+    meetings: state.meetings,
+    recaps: state.recaps,
+    getRoom,
+    scheduleMeeting,
+    saveRecap,
+    updateRecapQa,
+    shareRecap,
     user,
     role: state.role,
     societies,

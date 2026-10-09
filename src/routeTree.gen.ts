@@ -16,8 +16,11 @@ import { Route as MySocietiesRouteImport } from './routes/my-societies'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SocietyPulseRouteImport } from './routes/society-pulse'
 import { Route as WelcomeRouteImport } from './routes/welcome'
+import { Route as CallRoomIdRouteImport } from './routes/call.$roomId'
+import { Route as CallsIndexRouteImport } from './routes/calls.index'
 import { Route as EventsIndexRouteImport } from './routes/events.index'
 import { Route as EventsEventIdRouteImport } from './routes/events.$eventId'
+import { Route as RecapsRecapIdRouteImport } from './routes/recaps.$recapId'
 import { Route as SocietiesIndexRouteImport } from './routes/societies.index'
 import { Route as SocietiesSocietyIdRouteImport } from './routes/societies.$societyId'
 
@@ -56,6 +59,16 @@ const WelcomeRoute = WelcomeRouteImport.update({
   path: '/welcome',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CallRoomIdRoute = CallRoomIdRouteImport.update({
+  id: '/call/$roomId',
+  path: '/call/$roomId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CallsIndexRoute = CallsIndexRouteImport.update({
+  id: '/calls/',
+  path: '/calls/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EventsIndexRoute = EventsIndexRouteImport.update({
   id: '/events/',
   path: '/events/',
@@ -64,6 +77,11 @@ const EventsIndexRoute = EventsIndexRouteImport.update({
 const EventsEventIdRoute = EventsEventIdRouteImport.update({
   id: '/events/$eventId',
   path: '/events/$eventId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RecapsRecapIdRoute = RecapsRecapIdRouteImport.update({
+  id: '/recaps/$recapId',
+  path: '/recaps/$recapId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SocietiesIndexRoute = SocietiesIndexRouteImport.update({
@@ -85,8 +103,11 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/society-pulse': typeof SocietyPulseRoute
   '/welcome': typeof WelcomeRoute
+  '/call/$roomId': typeof CallRoomIdRoute
   '/events/$eventId': typeof EventsEventIdRoute
+  '/recaps/$recapId': typeof RecapsRecapIdRoute
   '/societies/$societyId': typeof SocietiesSocietyIdRoute
+  '/calls/': typeof CallsIndexRoute
   '/events/': typeof EventsIndexRoute
   '/societies/': typeof SocietiesIndexRoute
 }
@@ -98,8 +119,11 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/society-pulse': typeof SocietyPulseRoute
   '/welcome': typeof WelcomeRoute
+  '/call/$roomId': typeof CallRoomIdRoute
   '/events/$eventId': typeof EventsEventIdRoute
+  '/recaps/$recapId': typeof RecapsRecapIdRoute
   '/societies/$societyId': typeof SocietiesSocietyIdRoute
+  '/calls': typeof CallsIndexRoute
   '/events': typeof EventsIndexRoute
   '/societies': typeof SocietiesIndexRoute
 }
@@ -112,8 +136,11 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/society-pulse': typeof SocietyPulseRoute
   '/welcome': typeof WelcomeRoute
+  '/call/$roomId': typeof CallRoomIdRoute
   '/events/$eventId': typeof EventsEventIdRoute
+  '/recaps/$recapId': typeof RecapsRecapIdRoute
   '/societies/$societyId': typeof SocietiesSocietyIdRoute
+  '/calls/': typeof CallsIndexRoute
   '/events/': typeof EventsIndexRoute
   '/societies/': typeof SocietiesIndexRoute
 }
@@ -127,8 +154,11 @@ export interface FileRouteTypes {
     | '/settings'
     | '/society-pulse'
     | '/welcome'
+    | '/call/$roomId'
     | '/events/$eventId'
+    | '/recaps/$recapId'
     | '/societies/$societyId'
+    | '/calls/'
     | '/events/'
     | '/societies/'
   fileRoutesByTo: FileRoutesByTo
@@ -140,8 +170,11 @@ export interface FileRouteTypes {
     | '/settings'
     | '/society-pulse'
     | '/welcome'
+    | '/call/$roomId'
     | '/events/$eventId'
+    | '/recaps/$recapId'
     | '/societies/$societyId'
+    | '/calls'
     | '/events'
     | '/societies'
   id:
@@ -153,8 +186,11 @@ export interface FileRouteTypes {
     | '/settings'
     | '/society-pulse'
     | '/welcome'
+    | '/call/$roomId'
     | '/events/$eventId'
+    | '/recaps/$recapId'
     | '/societies/$societyId'
+    | '/calls/'
     | '/events/'
     | '/societies/'
   fileRoutesById: FileRoutesById
@@ -167,8 +203,11 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   SocietyPulseRoute: typeof SocietyPulseRoute
   WelcomeRoute: typeof WelcomeRoute
+  CallRoomIdRoute: typeof CallRoomIdRoute
   EventsEventIdRoute: typeof EventsEventIdRoute
+  RecapsRecapIdRoute: typeof RecapsRecapIdRoute
   SocietiesSocietyIdRoute: typeof SocietiesSocietyIdRoute
+  CallsIndexRoute: typeof CallsIndexRoute
   EventsIndexRoute: typeof EventsIndexRoute
   SocietiesIndexRoute: typeof SocietiesIndexRoute
 }
@@ -224,6 +263,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WelcomeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/call/$roomId': {
+      id: '/call/$roomId'
+      path: '/call/$roomId'
+      fullPath: '/call/$roomId'
+      preLoaderRoute: typeof CallRoomIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/calls/': {
+      id: '/calls/'
+      path: '/calls'
+      fullPath: '/calls/'
+      preLoaderRoute: typeof CallsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/events/': {
       id: '/events/'
       path: '/events'
@@ -236,6 +289,13 @@ declare module '@tanstack/react-router' {
       path: '/events/$eventId'
       fullPath: '/events/$eventId'
       preLoaderRoute: typeof EventsEventIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recaps/$recapId': {
+      id: '/recaps/$recapId'
+      path: '/recaps/$recapId'
+      fullPath: '/recaps/$recapId'
+      preLoaderRoute: typeof RecapsRecapIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/societies/': {
@@ -263,8 +323,11 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   SocietyPulseRoute: SocietyPulseRoute,
   WelcomeRoute: WelcomeRoute,
+  CallRoomIdRoute: CallRoomIdRoute,
   EventsEventIdRoute: EventsEventIdRoute,
+  RecapsRecapIdRoute: RecapsRecapIdRoute,
   SocietiesSocietyIdRoute: SocietiesSocietyIdRoute,
+  CallsIndexRoute: CallsIndexRoute,
   EventsIndexRoute: EventsIndexRoute,
   SocietiesIndexRoute: SocietiesIndexRoute,
 }

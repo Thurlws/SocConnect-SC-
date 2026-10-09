@@ -14,3 +14,5 @@
 - Static mock data lives in `src/data/mock.ts` with a fixed DEMO_TODAY so the demo reads the same on any day.
 - Date formatting is manual in `src/lib/format.ts` (no toLocaleDateString) to avoid SSR hydration mismatches.
 - The app shell wraps every route except `/welcome` in `__root.tsx`.
+- Calls are a demo: real camera/mic + browser speech-to-text for the user, scripted simulated participants (`src/data/calls.ts`); swap for a real calling service later without changing recap flow.
+- AI calls go through server functions in `src/lib/calls.functions.ts`, with gateway helpers in server-only `src/lib/ai.server.ts` — keeps the API key off the client.

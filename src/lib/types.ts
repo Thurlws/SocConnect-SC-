@@ -121,3 +121,43 @@ export interface MembershipRequest {
   message: string;
   requestedAt: string;
 }
+
+export interface CallRoom {
+  id: string;
+  societyId: string;
+  name: string;
+  kind: "room" | "meeting";
+  description: string;
+  /** meetings only */
+  date?: string | undefined;
+  start?: string | undefined;
+  eventId?: string | undefined;
+  host?: string | undefined;
+}
+
+export interface TranscriptLine {
+  speaker: string;
+  text: string;
+  at: number; // seconds since call start
+}
+
+export interface CallSummary {
+  overview: string;
+  topics: string[];
+  decisions: string[];
+  actionItems: { owner: string; task: string }[];
+}
+
+export interface CallRecap {
+  id: string;
+  roomId: string;
+  societyId: string;
+  title: string;
+  date: string; // ISO datetime
+  durationSec: number;
+  participants: string[];
+  transcript: TranscriptLine[];
+  summary: CallSummary;
+  qa: { role: "user" | "assistant"; content: string }[];
+  shared: boolean;
+}
