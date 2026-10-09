@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { CalendarClock, FileText, Headphones, Plus, Radio, Share2, Video } from "lucide-react";
+import { CalendarClock, FileText, Headphones, Plus, QrCode, Radio, Share2, Video } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useDemo } from "@/lib/demo-store";
@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { InviteDialog } from "@/components/invite-dialog";
 
 const initials = (n: string) => n.split(" ").map((p) => p[0]).join("");
 
@@ -27,12 +28,14 @@ export function RoomCard({ room, showSociety }: { room: CallRoom; showSociety?: 
   const people = mode === "simulated" ? roomPresence(room.id) : [];
   if (!s) return null;
   return (
-    <Link to="/call/$roomId" params={{ roomId: room.id }} className="card-interactive group flex items-center gap-3 rounded-xl border bg-card p-4 shadow-soft">
+    <div className="card-interactive flex items-center gap-3 rounded-xl border bg-card p-4 shadow-soft">
       {showSociety ? <SocietyAvatar society={s} size="sm" /> : (
         <span className={cn("flex size-9 items-center justify-center rounded-lg", accentClasses[s.accent].soft, accentClasses[s.accent].text)}><Headphones className="size-4" /></span>
       )}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold">{showSociety && <span className="text-muted-foreground">{s.shortName} · </span>}{room.name}</p>
+        <p className="truncate text-sm font-semibold">
+          <Link to="/call/$roomId" params={{ roomId: room.id }} className="hover:underline">{showSociety && <span className="text-muted-foreground">{s.shortName} · </span>}{room.name}</Link>
+        </p>
         <p className="truncate text-xs text-muted-foreground">{room.description}</p>
       </div>
       {people.length > 0 ? (
@@ -44,7 +47,11 @@ export function RoomCard({ room, showSociety }: { room: CallRoom; showSociety?: 
         </div>
       ) : mode === "live" ? <span className="flex items-center gap-1 text-xs font-medium text-success"><Radio className="size-3.5" />Live</span>
         : mode === "simulated" ? <span className="text-xs text-muted-foreground">Empty</span> : null}
-    </Link>
+      <InviteDialog roomId={room.id} roomName={room.name} societyName={s.name}>
+        <Button size="icon" variant="ghost" className="size-8 shrink-0" aria-label={`Share invite for ${room.name}`}><QrCode className="size-4" /></Button>
+      </InviteDialog>
+      <Button asChild size="sm" variant="outline" className="shrink-0"><Link to="/call/$roomId" params={{ roomId: room.id }}><Video />Join</Link></Button>
+    </div>
   );
 }
 
@@ -62,7 +69,12 @@ export function MeetingCard({ meeting }: { meeting: CallRoom }) {
           <CalendarClock className="mr-1 inline size-3" />{today ? "Today" : formatDate(meeting.date ?? DEMO_TODAY)} · {meeting.start} · {s.shortName}{meeting.host ? ` · hosted by ${meeting.host}` : ""}
         </p>
       </div>
-      <Button asChild size="sm" variant="outline"><Link to="/call/$roomId" params={{ roomId: meeting.id }}><Video />Join</Link></Button>
+      <div className="flex items-center gap-1">
+        <InviteDialog roomId={meeting.id} roomName={meeting.name} societyName={s.name}>
+          <Button size="icon" variant="ghost" className="size-8" aria-label={`Share invite for ${meeting.name}`}><QrCode className="size-4" /></Button>
+        </InviteDialog>
+        <Button asChild size="sm" variant="outline"><Link to="/call/$roomId" params={{ roomId: meeting.id }}><Video />Join</Link></Button>
+      </div>
     </div>
   );
 }
