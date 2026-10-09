@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouterState } from "@tanstack/react-router";
 import { ArrowLeft, FileText, Hash, Lock, Megaphone, MessageSquarePlus, Pin, Send, CalendarClock, Users, Link2, ClipboardList, BookOpen } from "lucide-react";
 import { useState } from "react";
 import { useData } from "@/lib/api/store";
@@ -39,6 +39,7 @@ function SocietyRoute() {
 }
 
 function SocietyPage({ societyId }: { societyId: string }) {
+  const hash = useRouterState({ select: s => s.location.hash });
   const { getSociety, membership, announcements, events, messages, postMessage, user, meetings, recaps, channels, resources, rooms } = useData();
   const s = getSociety(societyId)!;
   const today = todayIso();
@@ -77,7 +78,7 @@ function SocietyPage({ societyId }: { societyId: string }) {
         </div>
       </div>
 
-      <Tabs defaultValue="overview" className="mt-6">
+      <Tabs key={hash.startsWith("announcement-") ? "announcement" : "overview"} defaultValue={hash.startsWith("announcement-") ? "announcements" : "overview"} className="mt-6">
         <TabsList className="h-auto flex-wrap justify-start bg-transparent p-0">
           {["overview", "announcements", "discussions", "calls", "events", "resources", "members"].map((t) => (
             <TabsTrigger key={t} value={t} className="rounded-full capitalize data-[state=active]:bg-primary-soft data-[state=active]:text-primary data-[state=active]:shadow-none">{t}</TabsTrigger>
@@ -121,7 +122,7 @@ function SocietyPage({ societyId }: { societyId: string }) {
         <TabsContent value="announcements" className="mt-6 space-y-3">
           {socAnn.length === 0 && <EmptyState icon={Megaphone} title="No announcements yet" body="The committee hasn't posted anything yet." />}
           {socAnn.map((x) => (
-            <article key={x.id} className="rounded-xl border bg-card p-5 shadow-soft">
+            <article key={x.id} id={`announcement-${x.id}`} className="scroll-mt-20 rounded-xl border bg-card p-5 shadow-soft">
               <p className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Megaphone className={cn("size-3.5", a.text)} />{x.author} · {timeAgo(x.createdAt)}
                 {x.pinned && <span className="flex items-center gap-1 font-medium text-primary"><Pin className="size-3" />Pinned</span>}

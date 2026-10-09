@@ -934,6 +934,73 @@ export type Database = {
         }
         Relationships: []
       }
+      society_ai_state: {
+        Row: {
+          created_at: string
+          feature: string
+          message: string
+          status: number
+        }
+        Insert: {
+          created_at?: string
+          feature: string
+          message: string
+          status: number
+        }
+        Update: {
+          created_at?: string
+          feature?: string
+          message?: string
+          status?: number
+        }
+        Relationships: []
+      }
+      society_fit_cache: {
+        Row: {
+          context_hash: string
+          created_at: string
+          reason: string
+          society_id: string
+          user_id: string
+        }
+        Insert: {
+          context_hash: string
+          created_at?: string
+          reason: string
+          society_id: string
+          user_id: string
+        }
+        Update: {
+          context_hash?: string
+          created_at?: string
+          reason?: string
+          society_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "society_fit_cache_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "society_fit_cache_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "society_member_counts"
+            referencedColumns: ["society_id"]
+          },
+          {
+            foreignKeyName: "society_fit_cache_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       society_memberships: {
         Row: {
           decided_at: string | null
@@ -1318,7 +1385,20 @@ export type Database = {
         Returns: undefined
       }
       purge_old_transcripts: { Args: never; Returns: number }
+      recommend_societies: {
+        Args: never
+        Returns: {
+          matched_interests: string[]
+          score: number
+          slug: string
+          society_id: string
+        }[]
+      }
       register_for_event: { Args: { _event_id: string }; Returns: undefined }
+      reserve_society_ai: {
+        Args: { _feature: string; _uid: string }
+        Returns: boolean
+      }
       schedule_meeting: {
         Args: {
           _date: string
