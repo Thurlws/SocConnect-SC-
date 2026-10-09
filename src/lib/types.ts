@@ -142,6 +142,8 @@ export interface TranscriptLine {
 }
 
 export interface CallSummary {
+  /** "fallback" = keyword-based recap written without the AI (see src/lib/call-recap-fallback.ts). */
+  source?: "ai" | "fallback" | undefined;
   overview: string;
   topics: string[];
   decisions: string[];
