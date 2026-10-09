@@ -111,6 +111,30 @@ npm run test
 
 Not every script may be present yet. Check `package.json` before running these commands.
 
+## Live video calls (LiveKit)
+
+Society calls are real multi-person video calls when LiveKit is configured. Without it they fall back to a demo with simulated participants, so nothing breaks.
+
+1. Create a free project at [LiveKit Cloud](https://cloud.livekit.io) and copy its **URL**, **API key** and **API secret**.
+2. Locally: `cp .env.example .env` and fill in `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`.
+3. When hosted: add the same three variables to the hosting provider's environment variables (never to `VITE_*` variables or committed files).
+
+The lobby shows **"Join as"** and **"Live call"** when it's working. Open the same call link on another device to join each other.
+
+- **Camera and mic need HTTPS.** Use the deployed URL on other laptops. `http://<your-ip>:<port>` won't get camera access (only `localhost` is exempt).
+- **Live captions use the browser's speech recognition (Chrome/Edge).** In other browsers, type into the transcript box. Typed and spoken lines are shared with everyone in the call and feed the recap.
+- Use a society's built-in rooms (e.g. CompSoc → Calls → Planning huddle) for multi-device demos. Scheduled calls only exist in the browser that created them.
+
+## Deploying to Vercel
+
+The app builds for Vercel without extra configuration: Nitro detects Vercel and outputs a Node serverless function.
+
+1. Import the GitHub repo in Vercel and keep the default settings.
+2. Add environment variables: `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`.
+3. Deploy. Vercel gives you an HTTPS URL that works on any laptop.
+
+AI recaps use the Lovable AI gateway (`LOVABLE_API_KEY`), which is provided on Lovable hosting. On Vercel without that key, recaps still work as a labelled basic summary.
+
 ## Demo walkthrough
 
 For a frontend demo, a useful presentation flow is:

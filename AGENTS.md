@@ -14,5 +14,5 @@
 - Static mock data lives in `src/data/mock.ts` with a fixed DEMO_TODAY so the demo reads the same on any day.
 - Date formatting is manual in `src/lib/format.ts` (no toLocaleDateString) to avoid SSR hydration mismatches.
 - The app shell wraps every route except `/welcome` in `__root.tsx`.
-- Calls are a demo: real camera/mic + browser speech-to-text for the user, scripted simulated participants (`src/data/calls.ts`); swap for a real calling service later without changing recap flow.
+- Calls: with `LIVEKIT_URL`/`LIVEKIT_API_KEY`/`LIVEKIT_API_SECRET` set, calls are real multi-person video via LiveKit (`src/components/live-call.tsx`; tokens minted server-side in `src/lib/livekit.server.ts`), and each person's browser speech-to-text is shared over the data channel so the recap covers everyone. Without them, calls fall back to scripted simulated participants (`src/data/calls.ts`). Recaps fall back to a keyword summary when AI is unavailable (`src/lib/call-recap-fallback.ts`).
 - AI calls go through server functions in `src/lib/calls.functions.ts`, with gateway helpers in server-only `src/lib/ai.server.ts` — keeps the API key off the client.
