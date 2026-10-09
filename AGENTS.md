@@ -23,3 +23,5 @@
 - Platform admins manage societies and committees at `/admin`; RLS policies (has_role / is_society_committee) are the security boundary.
 - Read policies never use `USING (true)`: profiles go through `can_see_profile` (self, admins, committee, shared society), society-scoped rows through `society_visible`, resources/proposals to members/committees — keeps personal data to the people who need it.
 - `.env` (public backend URL/key only) is committed; real secrets live in Cloud secrets — published builds read `.env` from the repo and break without it.
+- Society AI lives in authenticated `society-ai.functions.ts`, using RLS-scoped real records, database-locked quotas and durable availability state; recommendations use the ranking RPC and daily per-user context-aware cache to bound cost and prevent invented plans.
+- The shared profile form uses native select/datalist choices backed by the official TU Dublin undergraduate catalogue, so onboarding and profile editing stay consistent.

@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { useSocietyFits } from "@/components/society-ai";
 
 export const Route = createFileRoute("/_authenticated/societies/")({
   head: () => pageHead("Discover Societies", "Browse every society on campus by interest, category and size."),
@@ -16,11 +17,12 @@ export const Route = createFileRoute("/_authenticated/societies/")({
 });
 
 function Discover() {
-  const { societies, membership, allInterests } = useData();
+  const { societies, membership, allInterests, recommendations } = useData();
+  const fits = useSocietyFits();
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("All");
   const [tags, setTags] = useState<string[]>([]);
-  const [sort, setSort] = useState("popular");
+  const [sort, setSort] = useState("recommended");
   const [status, setStatus] = useState("all");
   const cats = ["All", ...Array.from(new Set(societies.map((s) => s.category)))];
 
@@ -31,8 +33,8 @@ function Discover() {
       .filter((s) => cat === "All" || s.category === cat)
       .filter((s) => tags.every((t) => s.tags.includes(t)))
       .filter((s) => status === "all" || (status === "joined" ? membership(s.id) === "member" : membership(s.id) === "none"))
-      .sort((a, b) => (sort === "az" ? a.name.localeCompare(b.name) : b.memberCount - a.memberCount));
-  }, [societies, q, cat, tags, sort, status, membership]);
+      .sort((a, b) => sort === "recommended" ? (recommendations.findIndex(r => r.slug === a.id) < 0 ? 99999 : recommendations.findIndex(r => r.slug === a.id)) - (recommendations.findIndex(r => r.slug === b.id) < 0 ? 99999 : recommendations.findIndex(r => r.slug === b.id)) : (sort === "az" ? a.name.localeCompare(b.name) : b.memberCount - a.memberCount));
+  }, [societies, q, cat, tags, sort, status, membership, recommendations]);
 
   const clear = () => { setQ(""); setCat("All"); setTags([]); setStatus("all"); };
 
@@ -56,6 +58,7 @@ function Discover() {
           <Select value={sort} onValueChange={setSort}>
             <SelectTrigger className="md:w-40"><SelectValue /></SelectTrigger>
             <SelectContent>
+              <SelectItem value="recommended">Recommended</SelectItem>
               <SelectItem value="popular">Most members</SelectItem>
               <SelectItem value="az">A–Z</SelectItem>
             </SelectContent>
@@ -76,7 +79,7 @@ function Discover() {
       <p className="mb-4 text-sm text-muted-foreground">{list.length} result{list.length === 1 ? "" : "s"}</p>
       {list.length ? (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {list.map((s) => <SocietyCard key={s.id} society={s} action={<JoinButton society={s} full />} />)}
+          {list.map((s) => <SocietyCard key={s.id} society={s} reason={fits.data?.reasons[s.id] ?? ""} action={<JoinButton society={s} full />} />)}
         </div>
       ) : (
         <EmptyState icon={SearchX} title="No societies match" body="Try fewer filters or a different search term." action={<Button size="sm" variant="outline" onClick={clear}>Clear filters</Button>} />

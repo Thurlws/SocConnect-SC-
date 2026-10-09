@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import type { CollaborationProposal, Society } from "@/lib/types";
+import { ProposalComposer } from "@/components/society-ai";
 
 export const Route = createFileRoute("/_authenticated/society-pulse")({
   head: () => pageHead("Society Pulse", "Discover collaboration opportunities between societies through shared interests."),
@@ -26,7 +27,7 @@ function findIn(proposals: CollaborationProposal[], a: string, b: string) {
 function Pulse() {
   const { societies, role, savedProposals, toggleProposal, proposals } = useData();
   const findProposal = (a: string, b: string) => findIn(proposals, a, b);
-  const [a, setA] = useState<string | null>("compsoc");
+  const [a, setA] = useState<string | null>(null);
   const [b, setB] = useState<string | null>(null);
   const [open, setOpen] = useState<CollaborationProposal | null>(null);
 
@@ -134,6 +135,7 @@ function Pulse() {
                   </p>
                 </>
               )}
+              <ProposalComposer key={`${sa.id}-${sb.id}`} a={sa.id} b={sb.id} />
             </div>
           ) : sa ? (
             <div className="rounded-xl border bg-card p-5 shadow-soft">
@@ -180,7 +182,7 @@ function Pulse() {
             return (
               <>
                 <SheetHeader>
-                  <Badge variant="warning" className="w-fit">Proposed idea · not scheduled</Badge>
+                   <Badge variant="warning" className="w-fit">{open.source === "ai" ? "AI-generated proposal, not a confirmed event" : "Proposed idea · not scheduled"}</Badge>
                   <SheetTitle className="font-display text-2xl">{open.title}</SheetTitle>
                   <SheetDescription>{open.summary}</SheetDescription>
                 </SheetHeader>
@@ -211,7 +213,7 @@ function Pulse() {
                       {savedProposals.includes(open.id) ? <><BookmarkCheck />Saved to discuss</> : <><Bookmark />Save as idea to discuss</>}
                     </Button>
                   ) : (
-                    <p className="rounded-lg bg-muted p-3 text-xs text-muted-foreground">Committee members can save ideas to discuss. Switch to the committee demo account from your profile menu.</p>
+                    <p className="rounded-lg bg-muted p-3 text-xs text-muted-foreground">Only committee members can save ideas to discuss.</p>
                   )}
                 </div>
               </>

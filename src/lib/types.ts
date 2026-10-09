@@ -105,6 +105,7 @@ export interface Notification {
 }
 
 export interface CollaborationProposal {
+  source?: "ai" | "committee";
   id: string;
   societyIds: [string, string];
   title: string;

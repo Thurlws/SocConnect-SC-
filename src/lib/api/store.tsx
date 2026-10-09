@@ -18,7 +18,7 @@ import type { CallRecap, Event, MembershipStatus, SupportRequest, SupportRequest
 const EMPTY: AppData = {
   societies: [], societyUuid: {}, slugOf: {}, committeeIds: {}, events: [], registrations: [], memberships: {}, announcements: [],
   channels: [], messages: [], resources: [], notifications: [], prefs: { announcements: true, events: true, discussions: false, email: false },
-  allInterests: [], requests: [], resolvedRequests: [], supportRequests: [], proposals: [], savedProposals: [], rooms: [], recaps: [],
+  allInterests: [], requests: [], resolvedRequests: [], supportRequests: [], proposals: [], savedProposals: [], rooms: [], recaps: [], recommendations: [],
 };
 
 const fail = (error: string): Outcome => ({ ok: false, error });
@@ -91,6 +91,8 @@ function useDataValue() {
     isAdmin: auth.access.is_admin,
     committeeSeats: auth.access.committee,
     societies: data.societies,
+    recommendations: data.recommendations,
+    societyUuid: data.societyUuid,
     events: data.events,
     announcements: data.announcements,
     channels: data.channels,

@@ -31,6 +31,7 @@ export type AppData = {
   savedProposals: string[];
   rooms: CallRoom[];
   recaps: CallRecap[];
+  recommendations: { slug: string; score: number; matched_interests: string[] }[];
 };
 
 const must = <T,>(r: { data: T | null; error: { message: string } | null }): T => {
@@ -60,9 +61,10 @@ export async function loadAppData(uid: string, committeeSocietyIds: string[]): P
     supabase.from("collaboration_proposals").select("*").order("created_at", { ascending: false }),
     supabase.from("saved_proposals").select("proposal_id").eq("user_id", uid),
   ]);
-  const [roomRes, recapRes] = await Promise.all([
+  const [roomRes, recapRes, recommendationRes] = await Promise.all([
     supabase.from("call_rooms").select("*, profiles!call_rooms_host_id_fkey(display_name)").order("starts_at", { nullsFirst: true }),
     supabase.from("call_recaps").select("*").order("created_at", { ascending: false }).limit(100),
+    supabase.rpc("recommend_societies"),
   ]);
 
   const socRows = must(soc);
@@ -135,6 +137,7 @@ export async function loadAppData(uid: string, committeeSocietyIds: string[]): P
   const p = prefs.data;
   return {
     societies, societyUuid, slugOf, committeeIds, events, memberships, requests, resolvedRequests, supportRequests, channels,
+    recommendations: must(recommendationRes),
     registrations: must(regs).map((r) => r.event_id),
     announcements: (must(ann) as { id: string; society_id: string; title: string; body: string; pinned: boolean; created_at: string; profiles: { display_name: string } | null }[])
       .filter((a) => slugOf[a.society_id])
@@ -147,7 +150,7 @@ export async function loadAppData(uid: string, committeeSocietyIds: string[]): P
     allInterests: must(ints).map((i) => i.name),
     proposals: must(props).filter((x) => slugOf[x.society_a] && slugOf[x.society_b]).map((x) => ({
       id: x.id, societyIds: [slugOf[x.society_a]!, slugOf[x.society_b]!], title: x.title, summary: x.summary, sharedInterests: x.shared_interests,
-      rationale: x.rationale, contributions: x.contributions as Record<string, string>, nextSteps: x.next_steps,
+      rationale: x.rationale, contributions: x.contributions as Record<string, string>, nextSteps: x.next_steps, source: x.source === "ai" ? "ai" : "committee",
     })),
     savedProposals: must(saved).map((s) => s.proposal_id),
     rooms: (must(roomRes) as unknown as { id: string; society_id: string; name: string; kind: "room" | "meeting"; description: string; starts_at: string | null; event_id: string | null; host_id: string | null; profiles: { display_name: string } | null }[])
