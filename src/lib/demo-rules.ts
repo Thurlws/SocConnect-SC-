@@ -22,8 +22,14 @@ import type {
   ResolvedRequest,
   Role,
   Society,
+  SupportRequest,
+  SupportRequestActivity,
+  SupportRequestCategory,
+  SupportRequestPriority,
+  SupportRequestStatus,
   User,
 } from "@/lib/types";
+import { canTransition, categoryLabel, priorityLabel, statusLabel } from "@/lib/support-requests";
 
 export interface NotificationPrefs {
   announcements: boolean;
@@ -51,6 +57,8 @@ export interface DemoState {
   prefs: NotificationPrefs;
   meetings: CallRoom[];
   recaps: CallRecap[];
+  /** Member → committee requests (see "Support requests" below). */
+  supportRequests: SupportRequest[];
 }
 
 export interface DemoContext {
@@ -202,11 +210,12 @@ const firstIssue = (e: z.ZodError) => e.issues[0]?.message ?? "Check the form an
 
 // ---------- Notifications ----------
 
-export type NotificationKind = "announcements" | "events" | "discussions" | "membership";
+export type NotificationKind =
+  "announcements" | "events" | "discussions" | "membership" | "requests";
 
 /**
- * Adds an in-app notification unless the recipient turned that kind off (membership updates are
- * always delivered) or an identical unread notification already exists (avoids repeat noise).
+ * Adds an in-app notification unless the recipient turned that kind off (membership and request
+ * updates are always delivered) or an identical unread notification already exists (avoids repeat noise).
  */
 export function notify(
   s: DemoState,
@@ -215,7 +224,7 @@ export function notify(
   n: Pick<Notification, "title" | "body" | "link">,
   ctx: DemoContext,
 ): DemoState {
-  if (kind !== "membership" && !s.prefs[kind]) return s;
+  if (kind !== "membership" && kind !== "requests" && !s.prefs[kind]) return s;
   const list = s.notifications[userId] ?? [];
   const key = JSON.stringify([n.title, n.body, n.link ?? null]);
   if (list.some((x) => !x.read && JSON.stringify([x.title, x.body, x.link ?? null]) === key))
@@ -596,4 +605,197 @@ export function postMessage(
     createdAt: ctx.now,
   };
   return { ok: true, id: m.id, state: { ...s, messages: [...s.messages, m] } };
+}
+
+// ---------- Support requests (member → committee) ----------
+
+export const supportRequestInput = z.object({
+  societyId: z.string(),
+  title: z
+    .string()
+    .trim()
+    .min(5, "Add a title of at least 5 characters.")
+    .max(120, "Keep the title under 120 characters."),
+  description: z
+    .string()
+    .trim()
+    .min(10, "Add some detail (at least 10 characters).")
+    .max(2000, "Keep the details under 2,000 characters."),
+  category: z.enum(
+    Object.keys(categoryLabel) as [SupportRequestCategory, ...SupportRequestCategory[]],
+  ),
+  priority: z.enum(
+    Object.keys(priorityLabel) as [SupportRequestPriority, ...SupportRequestPriority[]],
+  ),
+});
+export type SupportRequestInput = z.infer<typeof supportRequestInput>;
+
+/** Only the member who sent a request and that society's committee can see it. */
+export const canViewSupportRequest = (actor: User, r: SupportRequest) =>
+  r.submittedBy === actor.id || canManageSociety(actor, r.societyId);
+
+const requestLink = (id: string) => ({ to: "/requests/$requestId", params: { requestId: id } });
+
+const logEntry = (
+  ctx: DemoContext,
+  actor: User,
+  kind: SupportRequestActivity["kind"],
+  text: string,
+): SupportRequestActivity => ({ id: ctx.newId("act"), at: ctx.now, actor: actor.name, kind, text });
+
+const replaceRequest = (s: DemoState, r: SupportRequest): DemoState => ({
+  ...s,
+  supportRequests: s.supportRequests.map((x) => (x.id === r.id ? r : x)),
+});
+
+/** Notifies the submitter when someone else updates their request (demo accounts only). */
+const notifySubmitter = (
+  s: DemoState,
+  actor: User,
+  r: SupportRequest,
+  title: string,
+  ctx: DemoContext,
+): DemoState =>
+  r.submittedBy !== actor.id && ctx.users.some((u) => u.id === r.submittedBy)
+    ? notify(s, r.submittedBy, "requests", { title, body: r.title, link: requestLink(r.id) }, ctx)
+    : s;
+
+export function submitSupportRequest(
+  s: DemoState,
+  actor: User,
+  input: SupportRequestInput,
+  ctx: DemoContext,
+): Outcome {
+  const soc = findSociety(ctx, input.societyId);
+  if (!soc) return fail("That society doesn't exist.");
+  if (membershipOf(s, actor.id, soc.id) !== "member")
+    return fail(`Join ${soc.shortName} to contact its committee.`);
+  const parsed = supportRequestInput.safeParse(input);
+  if (!parsed.success) return fail(firstIssue(parsed.error));
+  const r: SupportRequest = {
+    ...parsed.data,
+    id: ctx.newId("sr"),
+    status: "open",
+    submittedBy: actor.id,
+    submitterName: actor.name,
+    createdAt: ctx.now,
+    updatedAt: ctx.now,
+    activity: [logEntry(ctx, actor, "created", "Submitted the request")],
+  };
+  const next = notify(
+    { ...s, supportRequests: [r, ...s.supportRequests] },
+    actor.id,
+    "requests",
+    { title: `Request sent to ${soc.shortName}`, body: r.title, link: requestLink(r.id) },
+    ctx,
+  );
+  return { ok: true, id: r.id, state: next };
+}
+
+function managedRequest(s: DemoState, actor: User, id: string, ctx: DemoContext) {
+  const r = s.supportRequests.find((x) => x.id === id);
+  if (!r || !canViewSupportRequest(actor, r)) return { error: "Request not found." } as const;
+  const soc = findSociety(ctx, r.societyId);
+  if (!canManageSociety(actor, r.societyId))
+    return { error: `Only the ${soc?.shortName ?? "society"} committee can do that.` } as const;
+  return { r, soc } as const;
+}
+
+export function assignSupportRequest(
+  s: DemoState,
+  actor: User,
+  id: string,
+  assignee: string | undefined,
+  ctx: DemoContext,
+): Outcome {
+  const found = managedRequest(s, actor, id, ctx);
+  if ("error" in found) return fail(found.error);
+  const { r, soc } = found;
+  if (assignee && !soc?.committee.some((c) => c.name === assignee))
+    return fail("Pick someone on this society's committee.");
+  if (assignee === r.assignedTo) return { ok: true, state: s };
+  const entry = logEntry(
+    ctx,
+    actor,
+    "assigned",
+    assignee ? `Assigned to ${assignee}` : "Removed the assignee",
+  );
+  return {
+    ok: true,
+    state: replaceRequest(s, {
+      ...r,
+      assignedTo: assignee,
+      updatedAt: entry.at,
+      activity: [...r.activity, entry],
+    }),
+  };
+}
+
+/** Committee only. Resolving requires a resolution note the member can see. */
+export function setSupportRequestStatus(
+  s: DemoState,
+  actor: User,
+  id: string,
+  to: SupportRequestStatus,
+  resolution: string | undefined,
+  ctx: DemoContext,
+): Outcome {
+  const found = managedRequest(s, actor, id, ctx);
+  if ("error" in found) return fail(found.error);
+  const { r } = found;
+  if (r.status === to) return { ok: true, state: s };
+  if (!canTransition(r.status, to))
+    return fail(`Can't move a request from ${statusLabel[r.status]} to ${statusLabel[to]}.`);
+  const note = resolution?.trim();
+  if (to === "resolved" && !note)
+    return fail("Add a resolution note so the member knows the outcome.");
+  const entry = logEntry(
+    ctx,
+    actor,
+    "status",
+    to === "resolved"
+      ? "Resolved"
+      : r.status === "resolved"
+        ? "Reopened the request"
+        : `Moved to ${statusLabel[to]}`,
+  );
+  const next: SupportRequest = {
+    ...r,
+    status: to,
+    resolution: to === "resolved" ? note : undefined,
+    updatedAt: entry.at,
+    activity: [...r.activity, entry],
+  };
+  return {
+    ok: true,
+    state: notifySubmitter(
+      replaceRequest(s, next),
+      actor,
+      next,
+      to === "resolved"
+        ? "Your request was resolved"
+        : `Your request is now ${statusLabel[to].toLowerCase()}`,
+      ctx,
+    ),
+  };
+}
+
+/** The submitter or the managing committee can comment. */
+export function commentOnSupportRequest(
+  s: DemoState,
+  actor: User,
+  id: string,
+  text: string,
+  ctx: DemoContext,
+): Outcome {
+  const r = s.supportRequests.find((x) => x.id === id);
+  if (!r || !canViewSupportRequest(actor, r)) return fail("You can't comment on this request.");
+  const parsed = messageInput.safeParse(text);
+  if (!parsed.success) return fail(firstIssue(parsed.error));
+  const entry = logEntry(ctx, actor, "comment", parsed.data);
+  const next = { ...r, updatedAt: entry.at, activity: [...r.activity, entry] };
+  return {
+    ok: true,
+    state: notifySubmitter(replaceRequest(s, next), actor, next, "New reply on your request", ctx),
+  };
 }

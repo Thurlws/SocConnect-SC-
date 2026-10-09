@@ -1,6 +1,6 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
-  Bell, CalendarDays, ChevronsLeft, Compass, Home, LayoutDashboard, Menu, MessagesSquare, RotateCcw, Search, Settings, Users, Waypoints, Repeat, Video,
+  Bell, CalendarDays, ChevronsLeft, Compass, Home, Inbox, LayoutDashboard, Menu, MessageSquareText, MessagesSquare, RotateCcw, Search, Settings, Users, Waypoints, Repeat, Video,
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
@@ -25,9 +25,11 @@ const nav: NavItem[] = [
   { to: "/events", label: "Events", icon: CalendarDays },
   { to: "/my-societies", label: "My Societies", icon: Users },
   { to: "/communications", label: "Communications", icon: MessagesSquare },
+  { to: "/requests", label: "My Requests", icon: MessageSquareText },
   { to: "/calls", label: "Calls", icon: Video },
   { to: "/society-pulse", label: "Society Pulse", icon: Waypoints },
   { to: "/committee", label: "Committee", icon: LayoutDashboard, committeeOnly: true },
+  { to: "/inbox", label: "Request Inbox", icon: Inbox, committeeOnly: true },
   { to: "/settings", label: "Settings", icon: Settings },
 ];
 
@@ -231,7 +233,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const title = titles[pathname] ?? (pathname.startsWith("/societies") ? "Society" : pathname.startsWith("/events") ? "Event" : "SocConnect");
+  const title = titles[pathname] ?? (pathname.startsWith("/societies") ? "Society" : pathname.startsWith("/events") ? "Event" : pathname.startsWith("/requests") ? "Request" : "SocConnect");
   const { role } = useDemo();
 
   return (

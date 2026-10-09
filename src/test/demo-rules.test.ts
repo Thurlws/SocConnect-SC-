@@ -46,6 +46,7 @@ const fresh = (): DemoState => ({
   prefs: { announcements: true, events: true, discussions: true, email: false },
   meetings: [],
   recaps: [],
+  supportRequests: [],
 });
 
 const ok = (o: Outcome) => {

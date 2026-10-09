@@ -1,5 +1,5 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { ArrowLeft, FileText, Hash, Lock, Megaphone, Pin, Send, CalendarClock, Users, Link2, ClipboardList, BookOpen } from "lucide-react";
+import { ArrowLeft, FileText, Hash, Lock, Megaphone, MessageSquarePlus, Pin, Send, CalendarClock, Users, Link2, ClipboardList, BookOpen } from "lucide-react";
 import { useState } from "react";
 import { useDemo } from "@/lib/demo-store";
 import { societies as baseSocieties, channels, resources, DEMO_TODAY } from "@/data/mock";
@@ -9,6 +9,7 @@ import { SocietyAvatar, accentClasses } from "@/components/society-avatar";
 import { toast } from "sonner";
 import { EventCard, EmptyState, DemoBadge } from "@/components/cards";
 import { JoinButton } from "@/components/join-button";
+import { NewRequestDialog } from "@/components/support-requests";
 import { MeetingCard, RecapCard, RoomCard, ScheduleCallDialog } from "@/components/calls";
 import { callRooms } from "@/data/calls";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -94,6 +95,12 @@ function SocietyPage() {
                   </li>
                 ))}
               </ul>
+              {isMember && (
+                <NewRequestDialog
+                  defaultSocietyId={s.id}
+                  trigger={<Button variant="outline" size="sm" className="mt-4 w-full"><MessageSquarePlus />Contact committee</Button>}
+                />
+              )}
             </div>
             <div className="rounded-xl border bg-card p-5 text-sm shadow-soft">
               <p className="font-semibold">Joining</p>
