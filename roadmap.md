@@ -4,6 +4,7 @@
 - [x] Phase 2: replace demo data with real data
 - [x] Phase 3: secure calls and AI recaps
 - [x] Sign-up: native year selection and searchable official TU Dublin courses
-- [ ] Phase 4: AI for society collaboration (approved)
-- [ ] Upload changes to GitHub develop and merge main without conflicts
+- [x] Phase 4: AI recommendations, society questions and editable collaboration proposals implemented
+- [ ] Phase 4 real-society end-to-end verification — blocked: no societies or committee seats exist yet
+- [x] Upload changes to GitHub develop; resolve outdated main conflicts and merge preserving both histories
 - [ ] Phase 5: realtime, tests, docs
