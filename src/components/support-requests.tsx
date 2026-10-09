@@ -200,24 +200,20 @@ export function NewRequestDialog({
             className="space-y-4"
             onSubmit={(e) => {
               e.preventDefault();
-              if (f.title.trim().length < 5 || f.description.trim().length < 10) {
-                setErr("Add a title (5+ characters) and some detail (10+ characters).");
-                return;
-              }
-              const id = submitSupportRequest({
+              const o = submitSupportRequest({
                 societyId: f.societyId,
                 category: f.category,
                 priority: f.priority,
-                title: f.title.trim(),
-                description: f.description.trim(),
+                title: f.title,
+                description: f.description,
               });
-              if (!id) {
-                setErr("You need to be a member of this society to contact its committee.");
+              if (!o.ok) {
+                setErr(o.error);
                 return;
               }
               toast.success(`Sent to the ${society?.shortName} committee`);
               setOpen(false);
-              navigate({ to: "/requests/$requestId", params: { requestId: id } });
+              if (o.id) navigate({ to: "/requests/$requestId", params: { requestId: o.id } });
             }}
           >
             <div className="grid gap-3 sm:grid-cols-2">

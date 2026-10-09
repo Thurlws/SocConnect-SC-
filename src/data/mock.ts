@@ -66,7 +66,8 @@ export const societies: Society[] = [
     description: "We run weekly workshops, hackathons, tech talks with industry guests and relaxed coding socials. Whether you've never written a line of code or you're shipping side projects, there's a seat for you.",
     icon: "Code2", accent: "indigo", memberCount: 412, tags: ["Technology", "Learning", "Career"],
     committee: [{ name: "Jordan Lee", position: "President" }, { name: "Priya Nair", position: "Events Officer" }, { name: "Sam Okafor", position: "Treasurer" }],
-    requiresApproval: false, meets: "Wednesdays, 18:00 · Engineering Building",
+    // Requires approval so the seeded requests make sense and the committee demo can approve a student.
+    requiresApproval: true, meets: "Wednesdays, 18:00 · Engineering Building",
   },
   {
     id: "music", name: "Music Society", shortName: "MusicSoc", category: "Arts",

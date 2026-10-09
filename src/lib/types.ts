@@ -116,10 +116,18 @@ export interface CollaborationProposal {
 export interface MembershipRequest {
   id: string;
   societyId: string;
+  /** Set when the requester is a demo account, so approval can update their membership. */
+  userId?: string | undefined;
   name: string;
   course: string;
   message: string;
   requestedAt: string;
+}
+
+export interface ResolvedRequest extends MembershipRequest {
+  outcome: "approved" | "declined";
+  resolvedAt: string;
+  resolvedBy: string;
 }
 
 /** Lifecycle: open → in_progress → resolved (see src/lib/support-requests.ts for allowed moves). */

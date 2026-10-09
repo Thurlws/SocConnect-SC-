@@ -182,9 +182,9 @@ function Activity({ request: r, manage }: { request: SupportRequest; manage: boo
         className="mt-5 space-y-2 border-t pt-5"
         onSubmit={(e) => {
           e.preventDefault();
-          const err = commentOnSupportRequest(r.id, text);
-          if (err) {
-            toast.error(err);
+          const o = commentOnSupportRequest(r.id, text);
+          if (!o.ok) {
+            toast.error(o.error);
             return;
           }
           setText("");
@@ -218,9 +218,9 @@ function ManagePanel({ request: r }: { request: SupportRequest }) {
   const committee = getSociety(r.societyId)?.committee ?? [];
 
   const move = (to: SupportRequest["status"], note?: string) => {
-    const err = setSupportRequestStatus(r.id, to, note);
-    if (err) {
-      toast.error(err);
+    const o = setSupportRequestStatus(r.id, to, note);
+    if (!o.ok) {
+      toast.error(o.error);
       return;
     }
     setResolution("");
@@ -240,8 +240,8 @@ function ManagePanel({ request: r }: { request: SupportRequest }) {
           value={r.assignedTo ?? UNASSIGNED}
           onValueChange={(v) => {
             const who = v === UNASSIGNED ? undefined : v;
-            const err = assignSupportRequest(r.id, who);
-            if (err) toast.error(err);
+            const o = assignSupportRequest(r.id, who);
+            if (!o.ok) toast.error(o.error);
             else toast.success(who ? `Assigned to ${who}` : "Assignee removed");
           }}
         >
