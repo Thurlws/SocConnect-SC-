@@ -63,68 +63,66 @@ Demo societies, events, memberships, and statistics should be treated as sample 
 
 ## Technology
 
-The planned frontend stack is:
+- React 19 + TypeScript, TanStack Start/Router (SSR), Vite
+- Tailwind CSS v4 with shadcn/ui (Radix) components, Lucide icons
+- Zod for input validation, Sonner toasts, Vitest + Testing Library
+- AI call recaps through server functions (`src/lib/calls.functions.ts`); the `LOVABLE_API_KEY` stays on the server
 
-- React
-- TypeScript
-- Vite
-- Tailwind CSS and/or shadcn/ui, where appropriate
-- Lucide icons
-
-The backend and identity-provider choices will be documented here once they are implemented in the repository. Keep this section aligned with the actual dependencies and configuration.
+There is **no backend database or real authentication yet**. All app state is demo state in the browser (see *Demo mode* below).
 
 ## Getting started
 
 ### Prerequisites
 
-- Node.js (use a version compatible with the project's `package.json`)
-- npm, or the package manager indicated by the lockfile
+- Node.js 22+ (tested with Node 26)
+- [Bun](https://bun.sh) is the project's package manager (`bun.lock`, used by Lovable). npm also works with the same `package.json`. Don't commit a `package-lock.json`.
 
-### Install dependencies
-
-```bash
-npm install
-```
-
-### Run locally
+### Install, run and build
 
 ```bash
-npm run dev
-```
-
-Open the local URL printed by Vite in the terminal.
-
-### Build for production
-
-```bash
-npm run build
+bun install          # or: npm install
+bun run dev          # or: npm run dev
+bun run build        # or: npm run build
 ```
 
 ### Run checks
 
-Use the scripts defined in `package.json`. For example, if configured:
-
 ```bash
-npm run lint
-npm run test
+bun run typecheck    # tsc --noEmit
+bun run test         # vitest run
+bun run lint         # eslint (the existing code has many Prettier formatting errors; run `bun run format` to fix them)
 ```
 
-Not every script may be present yet. Check `package.json` before running these commands.
+## Demo mode: what's real and what isn't
+
+All state lives in `src/lib/demo-store.tsx`. It's saved to `localStorage` under `socconnect-demo-v2`, so it stays in **this browser only** and other users never see it. Reset it from the profile menu or **Settings → Demo controls**. The two demo accounts (Alex Morgan, student; Jordan Lee, CompSoc committee) are fictional, and anyone can switch between them. **The account switcher is not authentication, and the checks below are not security.**
+
+Business rules are pure functions in `src/lib/demo-rules.ts`, tested in `src/test/demo-rules.test.ts`. Every store action returns `{ ok, error }`, so the UI shows a clear error instead of corrupting the state:
+
+- **Membership:** join open societies instantly; approval-only societies (CompSoc, RoboSoc, VolSoc) create a pending request that you can cancel. Duplicate joins or requests, leaving a society you aren't in, and a committee member leaving their own society are all rejected.
+- **Request review:** only the society's own committee can review. **Approve** adds the person as a member and updates the member count; **Decline** doesn't. A student's own request appears in the committee inbox and they get notified of the decision.
+- **Events:** no duplicate registrations, no registering beyond capacity (there's no waitlist) and no registering for past events. Attendee and member counts are derived from the seeded figures plus demo actions. Registered events can be exported as `.ics`.
+- **Committee actions** (announcements, events, profile edits) are checked against the acting account's society and validated with Zod (lengths, end time after start, capacity of at least 1, no past dates).
+- **Notifications** are in-app only and follow the toggles in Settings. Identical unread notifications aren't repeated. There's no email or push delivery.
+- **Discussions** are saved in this browser only and aren't real-time.
+- **Calls:** your camera and mic are real; the other participants are scripted. There are no real calls between members yet.
+
+To move to a real backend, re-implement the `demo-rules.ts` checks on the server and in database policies (for example Supabase row-level security). They shouldn't stay client-side only.
 
 ## Demo walkthrough
 
-For a frontend demo, a useful presentation flow is:
+A 2–3 minute flow that only uses working features (reset the demo data first):
 
-1. Open SocConnect and enter the available demo experience.
-2. Browse societies and open a society profile.
-3. Join a society or view its membership state.
-4. Read an announcement and explore a discussion.
-5. Find an event and try the registration flow.
-6. Open **Society Pulse** and explore a proposed collaboration.
-7. Switch to the committee demo experience, if implemented.
-8. Create a sample announcement or event, if that interaction is available.
+1. **Welcome → Explore as a student** (Alex). Home shows registrations, announcements and recommendations.
+2. **Discover Societies** → open **CompSoc** → **Joined → Leave**. CompSoc needs approval, so click **Request to join**. The button now shows *Pending · cancel*.
+3. Open **Events** → *Halloween LAN Party* shows **Event full** (capacity is enforced). Register for *Open Jam Night* and download the `.ics` file.
+4. Profile menu → **Jordan Lee · Committee**. The **Committee** page lists Alex's request. **Approve** it: the member count goes up and it shows under *Recently reviewed*. **Decline** a different request to show it doesn't add a member.
+5. Post an announcement and create an event. Try an end time before the start time to show the validation.
+6. Switch back to Alex. The bell shows *"You're in! CompSoc approved your request"* and the new announcement.
+7. **Society Pulse** → pick two societies → explore a curated idea (labelled as a proposal, not a confirmed event).
+8. **Calls** → join a room. Point out that the camera is real, the other participants are simulated, and you get a recap at the end.
 
-Use only the steps supported by the current build. Clearly identify mock data and demo-only behaviour during presentations.
+Say clearly that the data is fictional and stored only in this browser.
 
 ## Repository structure
 
