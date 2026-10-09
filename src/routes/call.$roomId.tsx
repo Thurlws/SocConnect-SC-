@@ -66,6 +66,8 @@ function CallPage() {
   const [lk, setLk] = useState<{ url: string; token: string } | null>(null);
   const [joining, setJoining] = useState(false);
   const [nameInput, setNameInput] = useState<string | null>(null);
+  const interimRef = useRef("");
+  const [srIssue, setSrIssue] = useState<string | null>(null);
   const sendRef = useRef<((text: string, speaker: string) => void) | null>(null);
   const seenRef = useRef(new Set<string>());
   const me = (nameInput ?? user.name).trim() || user.name;
@@ -152,10 +154,17 @@ function CallPage() {
         if (r.isFinal) { const t = r[0].transcript.trim(); if (t) say(t); } else partial += r[0].transcript;
       }
       setInterim(partial);
+      interimRef.current = partial;
+      setSrIssue(null);
       setSpeaking(partial ? me : null);
     };
-    rec.onerror = (e) => { if (e.error === "not-allowed") setSrSupported(false); };
-    rec.onend = () => { if (micRef.current && recRef.current === rec) try { rec.start(); } catch { /* already running */ } };
+    rec.onerror = (e) => {
+      if (e.error === "not-allowed" || e.error === "service-not-allowed") { setSrSupported(false); setSrIssue("Captions are blocked — allow the microphone, or type below."); }
+      else if (e.error === "network") setSrIssue("Captions lost connection — retrying…");
+      else if (e.error === "audio-capture") setSrIssue("No microphone found for captions — type below.");
+    };
+    // Chrome stops recognition after silence or errors; keep restarting while the mic is on.
+    rec.onend = () => { if (micRef.current && recRef.current === rec) setTimeout(() => { if (recRef.current === rec) try { rec.start(); } catch { /* already running */ } }, 250); };
     recRef.current = rec;
     if (micRef.current) try { rec.start(); } catch { /* noop */ }
     return () => { recRef.current = null; rec.stop(); };
@@ -177,19 +186,28 @@ function CallPage() {
   const title = `${room.name}`;
 
   const endCall = async () => {
+    const rec = recRef.current;
     recRef.current = null;
-    if (transcript.length === 0) { toast.message("Call ended — nothing was said, so there's no recap."); navigate({ to: "/calls" }); return; }
+    try { rec?.stop(); } catch { /* noop */ }
+    // Keep words still being recognised when Leave was pressed.
+    let lines = transcript;
+    const pending = interimRef.current.trim();
+    if (pending) { lines = [...transcript, { speaker: me, text: pending, at: elapsedRef.current }]; sendRef.current?.(pending, me); }
+    if (lines.length === 0) {
+      toast.message("No captions were captured, so there's no recap.", { description: srSupported ? "Captions work in Chrome or Edge with the microphone allowed. You can also type into the transcript." : "Live captions need Chrome or Edge. Type into the transcript during the call instead." });
+      navigate({ to: "/calls" }); return;
+    }
     setPhase("summarizing");
     let summary: CallSummary;
     try {
-      summary = await summarize({ data: { society: society.name, title, transcript } });
+      summary = await summarize({ data: { society: society.name, title, transcript: lines } });
     } catch {
       // Server unreachable: still save a keyword recap so leaving a call never loses the transcript.
-      summary = fallbackSummary(transcript, elapsedRef.current);
+      summary = fallbackSummary(lines, elapsedRef.current);
     }
     if (summary.source === "fallback") toast.message("AI summary unavailable, so we saved a basic recap from the transcript.");
     const participants = lk ? [...new Set([me, ...seenRef.current])] : [me, ...others];
-    const id = saveRecap({ roomId: room.id, societyId: society.id, title: `${room.name} — ${society.shortName}`, date: demoNowIso(), durationSec: elapsedRef.current, participants, transcript, summary });
+    const id = saveRecap({ roomId: room.id, societyId: society.id, title: `${room.name} — ${society.shortName}`, date: demoNowIso(), durationSec: elapsedRef.current, participants, transcript: lines, summary });
     navigate({ to: "/recaps/$recapId", params: { recapId: id } });
   };
 
@@ -263,7 +281,7 @@ function CallPage() {
         <span className="flex items-center gap-1.5 rounded-full bg-ink-foreground/10 px-3 py-1 text-xs"><span className="size-1.5 animate-pulse rounded-full bg-destructive" />{lk ? "Live · AI notes on" : "AI notes on"}</span>
       </div>
 
-      <div className="flex min-h-0 flex-1 gap-4 px-5 pb-3">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 px-5 pb-3 md:flex-row">
         <div className="grid min-h-0 flex-1 auto-rows-fr grid-cols-1 gap-3 sm:grid-cols-2">
           {lk ? <LiveTiles accentSolid={a.solid} /> : tiles.map((n) => {
             const isMe = n === me;
@@ -280,8 +298,9 @@ function CallPage() {
         </div>
 
         {showCaptions && (
-          <aside className="hidden w-80 shrink-0 flex-col overflow-hidden rounded-2xl bg-ink-foreground/5 md:flex">
-            <p className="flex items-center gap-2 border-b border-ink-foreground/10 px-4 py-3 text-sm font-semibold"><Captions className="size-4" />Live transcript</p>
+          <aside className="flex h-56 shrink-0 flex-col overflow-hidden rounded-2xl bg-ink-foreground/5 md:h-auto md:w-80">
+            <p className="flex items-center gap-2 border-b border-ink-foreground/10 px-4 py-3 text-sm font-semibold"><Captions className="size-4" />Live transcript{micOn && srSupported && <span className="ml-auto flex items-center gap-1 text-xs font-normal opacity-70"><span className="size-1.5 animate-pulse rounded-full bg-success" />Listening</span>}</p>
+            {srIssue && <p className="border-b border-ink-foreground/10 px-4 py-2 text-xs opacity-80">{srIssue}</p>}
             <div className="flex-1 space-y-3 overflow-y-auto p-4 text-sm">
               {transcript.length === 0 && !interim && <p className="opacity-60">Start talking — captions will show up here.</p>}
               {transcript.map((l, i) => (
@@ -301,7 +320,7 @@ function CallPage() {
       <div className="flex items-center justify-center gap-3 pb-5">
         <Button size="icon" variant={micOn ? "secondary" : "destructive"} className="size-12 rounded-full" onClick={() => setMicOn((m) => !m)} aria-label={micOn ? "Mute" : "Unmute"}>{micOn ? <Mic /> : <MicOff />}</Button>
         <Button size="icon" variant={camOn ? "secondary" : "destructive"} className="size-12 rounded-full" onClick={() => setCamOn((c) => !c)} aria-label={camOn ? "Turn camera off" : "Turn camera on"}>{camOn ? <Video /> : <VideoOff />}</Button>
-        <Button size="icon" variant="secondary" className={cn("hidden size-12 rounded-full md:inline-flex", !showCaptions && "opacity-60")} onClick={() => setShowCaptions((s) => !s)} aria-label="Toggle transcript"><Captions /></Button>
+        <Button size="icon" variant="secondary" className={cn("size-12 rounded-full", !showCaptions && "opacity-60")} onClick={() => setShowCaptions((s) => !s)} aria-label="Toggle transcript"><Captions /></Button>
         <Button variant="destructive" className="h-12 rounded-full px-6" onClick={endCall} disabled={phase === "summarizing"}>
           {phase === "summarizing" ? <><Loader2 className="animate-spin" />Writing recap…</> : <><PhoneOff />Leave & summarise</>}
         </Button>
