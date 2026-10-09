@@ -16,18 +16,13 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
-import { useDemo } from "@/lib/demo-store";
-import { callScript, roomPresence } from "@/data/calls";
-import { demoNowIso } from "@/lib/format";
-import { summarizeCall } from "@/lib/calls.functions";
-import { fallbackSummary } from "@/lib/call-recap-fallback";
-import { getCallMode, getCallToken } from "@/lib/livekit.functions";
-import { inviteUrl } from "@/lib/invite";
+import { useData } from "@/lib/api/store";
+import { summarizeCall, transcribeClip, transcribeGuestClip } from "@/lib/calls.functions";
+import { getCallMode, getCallToken, getGuestToken } from "@/lib/livekit.functions";
 import { CallHeaderCount, LiveCallBridge, LiveCallRoom, LiveTiles } from "@/components/live-call";
 import { InviteDialog } from "@/components/invite-dialog";
 import type { CallSummary, CallRoom, Society, TranscriptLine } from "@/lib/types";
 import { SocietyAvatar, accentClasses } from "@/components/society-avatar";
-import { DemoBadge } from "@/components/cards";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -57,17 +52,24 @@ export function CallExperience({
   defaultName,
   onName,
   onEnded,
+  inviteCode,
 }: {
   room: CallRoom;
   society: Society;
   guest?: boolean;
   defaultName: string;
   onName?: (name: string) => void;
-  onEnded?: (recapId: string) => void;
+  onEnded?: () => void;
+  /** Guests join with a committee-made invite code instead of an account. */
+  inviteCode?: string;
 }) {
-  const { saveRecap } = useDemo();
+  const { refresh } = useData();
   const navigate = useNavigate();
   const summarize = useServerFn(summarizeCall);
+  const transcribeMember = useServerFn(transcribeClip);
+  const transcribeGuest = useServerFn(transcribeGuestClip);
+  const guestToken = useServerFn(getGuestToken);
+  const flushRef = useRef<(() => Promise<void>) | null>(null);
   const callMode = useServerFn(getCallMode);
   const callToken = useServerFn(getCallToken);
 
@@ -81,8 +83,11 @@ export function CallExperience({
   const [speaking, setSpeaking] = useState<string | null>(null);
   const [typed, setTyped] = useState("");
   const [srSupported, setSrSupported] = useState(true);
-  // "live" = real multi-person call via LiveKit; "simulated" = scripted participants (no LiveKit configured).
-  const [mode, setMode] = useState<"checking" | "live" | "simulated">("checking");
+  // "live" = real call via LiveKit; "unavailable" = calls aren't configured yet.
+  const [mode, setMode] = useState<"checking" | "live" | "unavailable">("checking");
+  // Consent: captions (and so the recap) can be switched off by anyone at any time.
+  const [captionsOn, setCaptionsOn] = useState(true);
+  const [remoteCaptions, setRemoteCaptions] = useState(false);
   const [lk, setLk] = useState<{ url: string; token: string } | null>(null);
   const [joining, setJoining] = useState(false);
   const [nameInput, setNameInput] = useState<string | null>(null);
@@ -102,42 +107,18 @@ export function CallExperience({
 
   const a = accentClasses[society.accent];
   const title = `${room.name}`;
-  // The share link depends on the browser's address, so it's filled in after mount.
-  const [invite, setInvite] = useState<string | null>(null);
-  useEffect(() => { setInvite(inviteUrl(room.id, window.location.origin)); }, [room.id]);
-
-  const others = (() => {
-    const base = room.kind === "meeting" ? society.committee.map((c) => c.name) : roomPresence(room.id);
-    const pool = [...base, ...society.committee.map((c) => c.name), "Priya Nair", "Sam Okafor"];
-    return [...new Set(pool)].filter((n) => n !== me).slice(0, 3);
-  })();
-
-  const addLine = useCallback((speaker: string, text: string) => setTranscript((t) => [...t, { speaker, text, at: elapsedRef.current }]), []);
+  const transcriptRef = useRef<TranscriptLine[]>([]);
+  const addLine = useCallback((speaker: string, text: string) => setTranscript((t) => { const n = [...t, { speaker, text, at: elapsedRef.current }]; transcriptRef.current = n; return n; }), []);
   /** Your own words: add to the transcript and share with everyone in a live call. */
   const say = (text: string) => { addLine(me, text); sendRef.current?.(text, me); };
   const onParticipants = useCallback((names: string[]) => names.forEach((n) => seenRef.current.add(n)), []);
 
   useEffect(() => {
     let cancelled = false;
-    callMode().then((r) => !cancelled && setMode(r.live ? "live" : "simulated")).catch(() => !cancelled && setMode("simulated"));
+    callMode().then((r) => !cancelled && setMode(r.live ? "live" : "unavailable")).catch(() => !cancelled && setMode("unavailable"));
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Media: camera + mic (simulated mode only; LiveKit manages devices in live calls)
-  useEffect(() => {
-    if (phase !== "live" || lk) return;
-    let cancelled = false;
-    navigator.mediaDevices?.getUserMedia({ video: true, audio: true }).then((s) => {
-      if (cancelled) return s.getTracks().forEach((t) => t.stop());
-      streamRef.current = s;
-      if (videoRef.current) videoRef.current.srcObject = s;
-    }).catch(() => { setCamOn(false); toast.message("Camera/mic not available — you can still type into the transcript."); });
-    return () => { cancelled = true; streamRef.current?.getTracks().forEach((t) => t.stop()); streamRef.current = null; };
-  }, [phase, lk]);
-
-  useEffect(() => { streamRef.current?.getVideoTracks().forEach((t) => (t.enabled = camOn)); if (camOn && videoRef.current && streamRef.current) videoRef.current.srcObject = streamRef.current; }, [camOn]);
-  useEffect(() => { streamRef.current?.getAudioTracks().forEach((t) => (t.enabled = micOn)); }, [micOn]);
 
   // Timer
   useEffect(() => {
@@ -146,104 +127,141 @@ export function CallExperience({
     return () => clearInterval(i);
   }, [phase]);
 
-  // Simulated participants
+  // Live speech-to-text: record the mic in short clips and transcribe each with AI.
+  // Works in every browser (the built-in browser captions often fail with "network").
   useEffect(() => {
-    if (phase !== "live" || !society || lk) return;
-    const script = callScript(society.shortName, others);
-    let idx = 0;
-    const i = setInterval(() => {
-      if (idx >= script.length) return clearInterval(i);
-      const l = script[idx++]!;
-      setSpeaking(l.speaker);
-      addLine(l.speaker, l.text);
-      setTimeout(() => setSpeaking((s) => (s === l.speaker ? null : s)), 3000);
-    }, 5000);
-    return () => clearInterval(i);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, society?.id]);
+    if (phase !== "live" || !captionsOn) return;
+    if (typeof MediaRecorder === "undefined" || !navigator.mediaDevices?.getUserMedia) { setSrSupported(false); return; }
+    let stopped = false;
+    let stream: MediaStream | null = null;
+    let rec: MediaRecorder | null = null;
+    let ctx: AudioContext | null = null;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let heard = false;
+    const pending = new Set<Promise<void>>();
+    const mime = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg"].find((m) => MediaRecorder.isTypeSupported?.(m)) ?? "";
 
-  // Live speech-to-text (browser)
-  useEffect(() => {
-    if (phase !== "live") return;
-    const Ctor = (window as SRWindow).SpeechRecognition ?? (window as SRWindow).webkitSpeechRecognition;
-    if (!Ctor) { setSrSupported(false); return; }
-    const rec: SR = new Ctor();
-    rec.continuous = true;
-    rec.interimResults = true;
-    rec.lang = "en-IE";
-    rec.onresult = (e) => {
-      let partial = "";
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const r = e.results[i];
-        if (!r) continue;
-        if (r.isFinal) { const t = r[0].transcript.trim(); if (t) say(t); } else partial += r[0].transcript;
-      }
-      setInterim(partial);
-      interimRef.current = partial;
-      setSrIssue(null);
-      setSpeaking(partial ? me : null);
+    const upload = (blob: Blob) => {
+      const job = (async () => {
+        const buf = new Uint8Array(await blob.arrayBuffer());
+        let bin = "";
+        for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000));
+        setInterim("transcribing");
+        interimRef.current = "";
+        try {
+          const clip = { audio: btoa(bin), mime: blob.type || mime || "audio/webm" };
+          const r = inviteCode ? await transcribeGuest({ data: { ...clip, code: inviteCode } }) : await transcribeMember({ data: clip });
+          if (r.text) { say(r.text); setSrIssue(null); }
+          else if (r.error) setSrIssue(`Captions: ${r.error}`);
+        } catch { setSrIssue("Captions couldn't reach the server — retrying…"); }
+        finally { setInterim(""); }
+      })();
+      pending.add(job);
+      void job.finally(() => pending.delete(job));
+      return job;
     };
-    rec.onerror = (e) => {
-      if (e.error === "not-allowed" || e.error === "service-not-allowed") { setSrSupported(false); setSrIssue("Captions are blocked — allow the microphone, or type below."); }
-      else if (e.error === "network") setSrIssue("Captions lost connection — retrying…");
-      else if (e.error === "audio-capture") setSrIssue("No microphone found for captions — type below.");
+
+    const startClip = () => {
+      if (stopped || !stream) return;
+      heard = false;
+      const chunks: Blob[] = [];
+      const r = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+      rec = r;
+      r.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+      r.onstop = () => {
+        const blob = new Blob(chunks, { type: (r.mimeType || mime || "audio/webm").split(";")[0] ?? "audio/webm" });
+        if (heard && blob.size > 2000) void upload(blob);
+        if (!stopped) startClip();
+      };
+      r.start();
+      timer = setTimeout(() => { if (r.state === "recording") r.stop(); }, 7000);
     };
-    // Chrome stops recognition after silence or errors; keep restarting while the mic is on.
-    rec.onend = () => { if (micRef.current && recRef.current === rec) setTimeout(() => { if (recRef.current === rec) try { rec.start(); } catch { /* already running */ } }, 250); };
-    recRef.current = rec;
-    if (micRef.current) try { rec.start(); } catch { /* noop */ }
-    return () => { recRef.current = null; rec.stop(); };
+
+    navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }).then((s) => {
+      if (stopped) return s.getTracks().forEach((t) => t.stop());
+      stream = s;
+      s.getAudioTracks().forEach((t) => (t.enabled = micRef.current));
+      // Only send clips that contain sound, so silence isn't transcribed.
+      try {
+        ctx = new AudioContext();
+        const an = ctx.createAnalyser();
+        an.fftSize = 512;
+        ctx.createMediaStreamSource(s).connect(an);
+        const data = new Uint8Array(an.fftSize);
+        const tick = () => {
+          if (stopped || !ctx) return;
+          an.getByteTimeDomainData(data);
+          let peak = 0;
+          for (const v of data) peak = Math.max(peak, Math.abs(v - 128));
+          if (peak > 12 && micRef.current) { heard = true; setSpeaking(me); } else setSpeaking((x) => (x === me ? null : x));
+          requestAnimationFrame(tick);
+        };
+        tick();
+      } catch { heard = true; }
+      startClip();
+    }).catch(() => { setSrSupported(false); setSrIssue("Captions are blocked — allow the microphone, or type below."); });
+
+    flushRef.current = async () => {
+      stopped = true;
+      if (timer) clearTimeout(timer);
+      if (rec && rec.state === "recording") await new Promise<void>((res) => { const r = rec!; const prev = r.onstop; r.onstop = (ev) => { (prev as ((e: Event) => void) | null)?.call(r, ev); res(); }; r.stop(); });
+      await Promise.all([...pending]);
+    };
+    recRef.current = { setEnabled: (on: boolean) => stream?.getAudioTracks().forEach((t) => (t.enabled = on)) } as unknown as SR;
+    return () => {
+      stopped = true;
+      if (timer) clearTimeout(timer);
+      try { if (rec?.state === "recording") rec.stop(); } catch { /* noop */ }
+      stream?.getTracks().forEach((t) => t.stop());
+      void ctx?.close();
+      recRef.current = null;
+      flushRef.current = null;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase]);
+  }, [phase, captionsOn]);
 
   useEffect(() => {
-    const rec = recRef.current;
-    if (!rec) return;
-    try { if (micOn) rec.start(); else rec.stop(); } catch { /* noop */ }
+    (recRef.current as unknown as { setEnabled?: (on: boolean) => void } | null)?.setEnabled?.(micOn);
   }, [micOn]);
 
   useEffect(() => { endRef.current?.scrollIntoView({ block: "nearest" }); }, [transcript, interim]);
 
+  const leave = () => { if (onEnded) onEnded(); else navigate({ to: "/calls" }); };
+
   const endCall = async () => {
-    const rec = recRef.current;
+    // Transcribe the words still being recorded when Leave was pressed.
+    const flush = flushRef.current;
+    flushRef.current = null;
+    if (flush) { setPhase("summarizing"); await flush().catch(() => undefined); }
     recRef.current = null;
-    try { rec?.stop(); } catch { /* noop */ }
-    // Keep words still being recognised when Leave was pressed.
-    let lines = transcript;
-    const pending = interimRef.current.trim();
-    if (pending) { lines = [...transcript, { speaker: me, text: pending, at: elapsedRef.current }]; sendRef.current?.(pending, me); }
+    const lines = transcriptRef.current;
+    if (guest) return leave();
     if (lines.length === 0) {
-      toast.message("No captions were captured, so there's no recap.", { description: srSupported ? "Captions work in Chrome or Edge with the microphone allowed. You can also type into the transcript." : "Live captions need Chrome or Edge. Type into the transcript during the call instead." });
-      if (onEnded) setPhase("lobby");
-      else navigate({ to: "/calls" });
-      return;
+      toast.message("No captions were captured, so there's no recap.", { description: captionsOn ? "Make sure the microphone is allowed and on. You can also type into the transcript." : "Captions were off for this call." });
+      return leave();
     }
     setPhase("summarizing");
-    let summary: CallSummary;
     try {
-      summary = await summarize({ data: { society: society.name, title, transcript: lines } });
-    } catch {
-      // Server unreachable: still save a keyword recap so leaving a call never loses the transcript.
-      summary = fallbackSummary(lines, elapsedRef.current);
+      const r = await summarize({ data: { roomId: room.id, transcript: lines, durationSec: elapsedRef.current } });
+      if (r.source === "fallback") toast.message("AI summary unavailable, so we saved a basic recap from the transcript.");
+      await refresh();
+      navigate({ to: "/recaps/$recapId", params: { recapId: r.id } });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't save the recap.");
+      leave();
     }
-    if (summary.source === "fallback") toast.message("AI summary unavailable, so we saved a basic recap from the transcript.");
-    const participants = lk ? [...new Set([me, ...seenRef.current])] : [me, ...others];
-    const id = saveRecap({ roomId: room.id, societyId: society.id, title: `${room.name} — ${society.shortName}`, date: demoNowIso(), durationSec: elapsedRef.current, participants, transcript: lines, summary });
-    if (onEnded) onEnded(id);
-    else navigate({ to: "/recaps/$recapId", params: { recapId: id } });
   };
 
   const join = async () => {
     onName?.(me);
-    if (mode !== "live") return setPhase("live");
+    if (mode !== "live") return;
     setJoining(true);
     try {
-      setLk(await callToken({ data: { roomId: room.id, name: me } }));
+      const t = inviteCode ? await guestToken({ data: { code: inviteCode, name: me } }) : await callToken({ data: { roomId: room.id } });
+      setLk({ url: t.url, token: t.token });
       setPhase("live");
-    } catch {
-      toast.error("Couldn't reach the live call service, so this is a demo call with simulated participants.");
-      setMode("simulated");
-      setPhase("live");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't join the call.");
     } finally {
       setJoining(false);
     }
@@ -263,43 +281,34 @@ export function CallExperience({
           <SocietyAvatar society={society} size="lg" className="mx-auto" />
           <h1 className="mt-4 font-display text-2xl font-semibold">{room.name}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{society.name} · {room.description}</p>
-          {mode === "simulated" && (
-            <>
-              <div className="mt-5 flex justify-center -space-x-2">
-                {others.map((p) => <span key={p} title={p} className={cn("flex size-9 items-center justify-center rounded-full border-2 border-card text-xs font-semibold", a.soft, a.text)}>{initials(p)}</span>)}
-              </div>
-              <p className="mt-2 text-xs text-muted-foreground">{others.join(", ")} {room.kind === "room" ? "are hanging out" : "will be there"}</p>
-            </>
-          )}
-          {guest || mode === "live" ? (
+          {guest ? (
             <div className="mt-6 space-y-1.5 text-left">
               <Label htmlFor="call-name">Join as</Label>
               <Input id="call-name" value={nameInput ?? defaultName} onChange={(e) => setNameInput(e.target.value)} maxLength={60} placeholder="Your name" />
             </div>
           ) : null}
           <div className="mt-6 rounded-xl bg-surface p-4 text-left text-sm text-muted-foreground">
-            <p className="flex items-center gap-2 font-medium text-foreground"><Wand2 className="size-4 text-primary" />AI recap is on</p>
-            <p className="mt-1">Live captions turn what's said into a transcript{mode === "live" ? " shared with everyone in the call" : ""}. When you leave, AI writes a summary with decisions and action items.</p>
+            <p className="flex items-center gap-2 font-medium text-foreground"><Wand2 className="size-4 text-primary" />Captions and an AI recap</p>
+            <p className="mt-1">By joining you agree that what you say is captioned, shared with everyone in the call, and used for an AI recap that participants and the committee can read. Transcripts are deleted after 7 days; summaries are kept. You can turn your captions off at any time with the captions button.</p>
           </div>
-          <Button size="lg" className="mt-6 w-full" onClick={join} disabled={mode === "checking" || joining}>{joining || mode === "checking" ? <Loader2 className="animate-spin" /> : <Video />}Join call</Button>
+          <Button size="lg" className="mt-6 w-full" onClick={join} disabled={mode !== "live" || joining}>{joining || mode === "checking" ? <Loader2 className="animate-spin" /> : <Video />}Join call</Button>
           {mode === "live" ? (
             <div className="mt-3 flex flex-wrap items-center justify-center gap-3 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1.5"><Radio className="size-3.5 text-success" />Live call: anyone who opens this room joins you</span>
-              {invite && (
+              <span className="flex items-center gap-1.5"><Radio className="size-3.5 text-success" />Live call</span>
+              {!guest && (
                 <InviteDialog roomId={room.id} roomName={room.name} societyName={society.name}>
-                  <Button type="button" size="sm" variant="ghost" className="h-auto px-2 text-xs"><QrCode className="size-3.5" />Share link or QR</Button>
+                  <Button type="button" size="sm" variant="ghost" className="h-auto px-2 text-xs"><QrCode className="size-3.5" />Guest link or QR</Button>
                 </InviteDialog>
               )}
             </div>
-          ) : mode === "simulated" ? (
-            <p className="mt-3 flex items-center justify-center gap-2 text-xs text-muted-foreground"><DemoBadge />Other people in the call are simulated</p>
+          ) : mode === "unavailable" ? (
+            <p className="mt-3 text-center text-xs text-muted-foreground">Calls aren't available yet. Ask a platform admin to set up the call service.</p>
           ) : null}
         </div>
       </div>
     );
   }
 
-  const tiles = [me, ...others];
   const stageClass = cn(
     "flex flex-col overflow-hidden rounded-2xl bg-ink text-ink-foreground shadow-soft",
     guest ? "min-h-dvh rounded-none" : "h-[calc(100dvh-10rem)] min-h-[520px]",
@@ -314,39 +323,31 @@ export function CallExperience({
             <p className="text-xs opacity-70">{society.shortName} · {clock(elapsed)}</p>
           </div>
         </div>
-        {lk ? <CallHeaderCount /> : <span className="flex items-center gap-1.5 rounded-full bg-ink-foreground/10 px-3 py-1 text-xs"><span className="size-1.5 animate-pulse rounded-full bg-destructive" />AI notes on</span>}
+        <div className="flex items-center gap-2">
+          {(captionsOn || remoteCaptions) && <span className="flex items-center gap-1.5 rounded-full bg-ink-foreground/10 px-3 py-1 text-xs" title="What's said is captioned and used for the AI recap"><span className="size-1.5 animate-pulse rounded-full bg-destructive" />Captions on{captionsOn ? "" : " (others)"}</span>}
+          {lk && <CallHeaderCount />}
+        </div>
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col gap-4 px-5 pb-3 md:flex-row">
         <div className="grid min-h-0 flex-1 auto-rows-fr grid-cols-1 gap-3 sm:grid-cols-2">
-          {lk ? <LiveTiles accentSolid={a.solid} roomId={room.id} roomName={room.name} societyName={society.name} /> : tiles.map((n) => {
-            const isMe = n === me;
-            return (
-              <div key={n} className={cn("relative flex items-center justify-center overflow-hidden rounded-2xl bg-ink-foreground/5 ring-2 ring-transparent transition", speaking === n && "ring-success")}>
-                {isMe && camOn ? <video ref={videoRef} autoPlay muted playsInline className="h-full w-full -scale-x-100 object-cover" />
-                  : <span className={cn("flex size-20 items-center justify-center rounded-full text-2xl font-semibold", a.solid, "text-primary-foreground")}>{initials(n)}</span>}
-                <span className="absolute bottom-3 left-3 flex items-center gap-1.5 rounded-lg bg-ink/70 px-2 py-1 text-xs">
-                  {isMe && !micOn && <MicOff className="size-3" />}{isMe ? `${n} (you)` : n}
-                </span>
-              </div>
-            );
-          })}
+          {lk && <LiveTiles accentSolid={a.solid} roomId={room.id} roomName={room.name} societyName={society.name} />}
         </div>
 
         {showCaptions && (
           <aside className="flex h-56 shrink-0 flex-col overflow-hidden rounded-2xl bg-ink-foreground/5 md:h-auto md:w-80">
-            <p className="flex items-center gap-2 border-b border-ink-foreground/10 px-4 py-3 text-sm font-semibold"><Captions className="size-4" />Live transcript{micOn && srSupported && <span className="ml-auto flex items-center gap-1 text-xs font-normal opacity-70"><span className="size-1.5 animate-pulse rounded-full bg-success" />Listening</span>}</p>
+            <p className="flex items-center gap-2 border-b border-ink-foreground/10 px-4 py-3 text-sm font-semibold"><Captions className="size-4" />Live transcript{captionsOn && micOn && srSupported && <span className="ml-auto flex items-center gap-1 text-xs font-normal opacity-70"><span className="size-1.5 animate-pulse rounded-full bg-success" />Listening</span>}</p>
             {srIssue && <p className="border-b border-ink-foreground/10 px-4 py-2 text-xs opacity-80">{srIssue}</p>}
             <div className="flex-1 space-y-3 overflow-y-auto p-4 text-sm">
               {transcript.length === 0 && !interim && <p className="opacity-60">Start talking — captions will show up here.</p>}
               {transcript.map((l, i) => (
                 <p key={i}><span className="font-semibold">{l.speaker}</span> <span className="text-xs opacity-50">{clock(l.at)}</span><br /><span className="opacity-90">{l.text}</span></p>
               ))}
-              {interim && <p className="opacity-60"><span className="font-semibold">{me}</span><br />{interim}…</p>}
+              {interim && <p className="opacity-60">Transcribing…</p>}
               <div ref={endRef} />
             </div>
             <form className="flex gap-2 border-t border-ink-foreground/10 p-3" onSubmit={(e) => { e.preventDefault(); if (typed.trim()) { say(typed.trim()); setTyped(""); } }}>
-              <Input value={typed} onChange={(e) => setTyped(e.target.value)} placeholder={srSupported ? "Type into the transcript" : "Live captions need Chrome — type instead"} className="border-ink-foreground/20 bg-transparent text-ink-foreground" />
+              <Input value={typed} onChange={(e) => setTyped(e.target.value)} placeholder={srSupported ? "Type into the transcript" : "Captions unavailable — type instead"} className="border-ink-foreground/20 bg-transparent text-ink-foreground" />
               <Button type="submit" size="icon" variant="secondary" aria-label="Add to transcript"><Send /></Button>
             </form>
           </aside>
@@ -356,9 +357,10 @@ export function CallExperience({
       <div className="flex items-center justify-center gap-3 pb-5">
         <Button size="icon" variant={micOn ? "secondary" : "destructive"} className="size-12 rounded-full" onClick={() => setMicOn((m) => !m)} aria-label={micOn ? "Mute" : "Unmute"}>{micOn ? <Mic /> : <MicOff />}</Button>
         <Button size="icon" variant={camOn ? "secondary" : "destructive"} className="size-12 rounded-full" onClick={() => setCamOn((c) => !c)} aria-label={camOn ? "Turn camera off" : "Turn camera on"}>{camOn ? <Video /> : <VideoOff />}</Button>
-        <Button size="icon" variant="secondary" className={cn("size-12 rounded-full", !showCaptions && "opacity-60")} onClick={() => setShowCaptions((s) => !s)} aria-label="Toggle transcript"><Captions /></Button>
+        <Button size="icon" variant={captionsOn ? "secondary" : "destructive"} className="size-12 rounded-full" onClick={() => { setCaptionsOn((c) => !c); toast.message(captionsOn ? "Your captions are off — what you say won't be in the transcript." : "Your captions are on."); }} aria-label={captionsOn ? "Turn my captions off" : "Turn my captions on"} title={captionsOn ? "Turn my captions off" : "Turn my captions on"}><Captions /></Button>
+        <Button size="icon" variant="secondary" className={cn("size-12 rounded-full", !showCaptions && "opacity-60")} onClick={() => setShowCaptions((s) => !s)} aria-label="Show or hide the transcript panel"><Send /></Button>
         <Button variant="destructive" className="h-12 rounded-full px-6" onClick={endCall} disabled={phase === "summarizing"}>
-          {phase === "summarizing" ? <><Loader2 className="animate-spin" />Writing recap…</> : <><PhoneOff />Leave & summarise</>}
+          {phase === "summarizing" ? <><Loader2 className="animate-spin" />{guest ? "Leaving…" : "Writing recap…"}</> : <><PhoneOff />{guest ? "Leave call" : "Leave & summarise"}</>}
         </Button>
       </div>
     </>
@@ -368,7 +370,7 @@ export function CallExperience({
     return (
       <LiveCallRoom url={lk.url} token={lk.token} connect={phase === "live"} className={stageClass}>
         {stage}
-        <LiveCallBridge micOn={micOn} camOn={camOn} sendRef={sendRef} onRemoteLine={addLine} onParticipants={onParticipants} />
+        <LiveCallBridge micOn={micOn} camOn={camOn} sendRef={sendRef} onRemoteLine={(sp, t) => { setRemoteCaptions(true); addLine(sp, t); }} onParticipants={onParticipants} />
       </LiveCallRoom>
     );
   }

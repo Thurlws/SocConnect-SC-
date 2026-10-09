@@ -1,9 +1,22 @@
-import { DEMO_TODAY } from "@/data/mock";
-
-// Manual formatting (not toLocaleDateString) so server and browser render identical text.
-const NOW = new Date(`${DEMO_TODAY}T12:00:00`);
+// Manual formatting (not toLocaleDateString) so output never depends on the browser's locale.
+// "Now" and "today" are real, in Europe/Dublin.
 const WD = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const MO = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+export const TIMEZONE = "Europe/Dublin";
+
+const dublinParts = new Intl.DateTimeFormat("en-GB", {
+  timeZone: TIMEZONE, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+});
+
+/** A moment as Dublin wall-clock date (YYYY-MM-DD) and time (HH:mm). */
+export function toDublin(d: Date | string) {
+  const parts: Record<string, string> = Object.fromEntries(dublinParts.formatToParts(new Date(d)).map((p) => [p.type, p.value]));
+  return { date: `${parts["year"]}-${parts["month"]}-${parts["day"]}`, time: `${parts["hour"]}:${parts["minute"]}`, hour: Number(parts["hour"]) };
+}
+
+/** Today's date in Dublin, YYYY-MM-DD. */
+export const todayIso = () => toDublin(new Date()).date;
+export const nowIso = () => new Date().toISOString();
 
 type Opts = { weekday?: "short" | "long"; day?: string; month?: "short" | "long"; year?: string };
 
@@ -27,7 +40,7 @@ export function dayParts(iso: string) {
 }
 
 export function timeAgo(iso: string) {
-  const diff = (NOW.getTime() - new Date(iso).getTime()) / 1000;
+  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
   if (diff < 60) return "just now";
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
@@ -35,14 +48,12 @@ export function timeAgo(iso: string) {
   return days === 1 ? "yesterday" : `${days}d ago`;
 }
 
+/** Whole days from Dublin "today" to a YYYY-MM-DD date. */
 export function daysUntil(iso: string) {
-  return Math.round((new Date(`${iso}T12:00:00`).getTime() - NOW.getTime()) / 86400000);
-}
-
-export function demoNowIso() {
-  return `${DEMO_TODAY}T12:00:00`;
+  return Math.round((new Date(`${iso.slice(0, 10)}T12:00:00Z`).getTime() - new Date(`${todayIso()}T12:00:00Z`).getTime()) / 86400000);
 }
 
 export function greeting() {
-  return "Good afternoon";
+  const h = toDublin(new Date()).hour;
+  return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
 }
