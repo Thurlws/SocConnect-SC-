@@ -8,6 +8,7 @@ import {
   initialNotifications,
   initialRegistrations,
   initialRequests,
+  initialSupportRequests,
   societies as baseSocieties,
 } from "@/data/mock";
 import type {
@@ -19,8 +20,12 @@ import type {
   Notification,
   Role,
   Society,
+  SupportRequest,
+  SupportRequestActivity,
+  SupportRequestStatus,
 } from "@/lib/types";
 import { demoNowIso } from "@/lib/format";
+import { canTransition, statusLabel } from "@/lib/support-requests";
 import { callRooms, initialMeetings, initialRecaps } from "@/data/calls";
 import type { CallRecap, CallRoom } from "@/lib/types";
 
@@ -43,6 +48,7 @@ interface DemoState {
   prefs: { announcements: boolean; events: boolean; discussions: boolean; email: boolean };
   meetings: CallRoom[];
   recaps: CallRecap[];
+  supportRequests: SupportRequest[];
 }
 
 const initialState = (): DemoState => ({
@@ -60,6 +66,7 @@ const initialState = (): DemoState => ({
   prefs: { announcements: true, events: true, discussions: false, email: true },
   meetings: [...initialMeetings],
   recaps: [...initialRecaps],
+  supportRequests: [...initialSupportRequests],
 });
 
 const KEY = "socconnect-demo-v1";
@@ -166,6 +173,70 @@ function useDemoValue() {
   const editSociety = (id: string, patch: Partial<Society>) =>
     setState((s) => ({ ...s, societyEdits: { ...s.societyEdits, [id]: { ...s.societyEdits[id], ...patch } } }));
 
+  // Support requests. Permission checks live here (not just in the UI) so the backend phase keeps the same rules.
+  const canManageRequest = (r: Pick<SupportRequest, "societyId">) => state.role === "committee" && user.committeeSocietyId === r.societyId;
+  const canViewRequest = (r: SupportRequest) => r.submittedBy === user.id || canManageRequest(r);
+  const logEntry = (kind: SupportRequestActivity["kind"], text: string): SupportRequestActivity => ({ id: uid("act"), at: demoNowIso(), actor: user.name, kind, text });
+  const requestLink = (id: string) => ({ to: "/requests/$requestId", params: { requestId: id } });
+  // Only the demo student is a real account, so only their requests produce notifications.
+  const notifySubmitter = (s: DemoState, r: SupportRequest, title: string) =>
+    r.submittedBy === demoUsers.student.id && r.submittedBy !== user.id ? notify(s, title, r.title, requestLink(r.id)) : s.notifications;
+  const findRequest = (id: string) => state.supportRequests.find((r) => r.id === id);
+
+  const submitSupportRequest = (input: Pick<SupportRequest, "societyId" | "title" | "description" | "category" | "priority">) => {
+    if (membership(input.societyId) !== "member") return null;
+    const id = uid("sr");
+    const now = demoNowIso();
+    const soc = baseSocieties.find((x) => x.id === input.societyId);
+    const req: SupportRequest = { ...input, id, status: "open", submittedBy: user.id, submitterName: user.name, createdAt: now, updatedAt: now, activity: [logEntry("created", "Submitted the request")] };
+    setState((s) => ({ ...s, supportRequests: [req, ...s.supportRequests], notifications: notify(s, `Request sent to ${soc?.shortName}`, req.title, requestLink(id)) }));
+    return id;
+  };
+
+  /** Returns an error message, or null on success. */
+  const assignSupportRequest = (id: string, assignee: string | undefined) => {
+    const r = findRequest(id);
+    if (!r || !canManageRequest(r)) return "Only this society's committee can assign requests.";
+    if (assignee && !baseSocieties.find((x) => x.id === r.societyId)?.committee.some((c) => c.name === assignee)) return "Pick someone on this society's committee.";
+    if (assignee === r.assignedTo) return null;
+    const entry = logEntry("assigned", assignee ? `Assigned to ${assignee}` : "Removed the assignee");
+    setState((s) => ({ ...s, supportRequests: s.supportRequests.map((x) => (x.id === id ? { ...x, assignedTo: assignee, updatedAt: entry.at, activity: [...x.activity, entry] } : x)) }));
+    return null;
+  };
+
+  /** Returns an error message, or null on success. Resolving requires a resolution note. */
+  const setSupportRequestStatus = (id: string, to: SupportRequestStatus, resolution?: string) => {
+    const r = findRequest(id);
+    if (!r || !canManageRequest(r)) return "Only this society's committee can change a request's status.";
+    if (r.status === to) return null;
+    if (!canTransition(r.status, to)) return `Can't move a request from ${statusLabel[r.status]} to ${statusLabel[to]}.`;
+    const note = resolution?.trim();
+    if (to === "resolved" && !note) return "Add a resolution note so the member knows the outcome.";
+    const entry = logEntry("status", to === "resolved" ? "Resolved" : r.status === "resolved" ? "Reopened the request" : `Moved to ${statusLabel[to]}`);
+    const next: SupportRequest = { ...r, status: to, resolution: to === "resolved" ? note : undefined, updatedAt: entry.at, activity: [...r.activity, entry] };
+    setState((s) => ({
+      ...s,
+      supportRequests: s.supportRequests.map((x) => (x.id === id ? next : x)),
+      notifications: notifySubmitter(s, r, to === "resolved" ? "Your request was resolved" : `Your request is now ${statusLabel[to].toLowerCase()}`),
+    }));
+    return null;
+  };
+
+  /** Submitter or managing committee can comment. Returns an error message, or null on success. */
+  const commentOnSupportRequest = (id: string, text: string) => {
+    const r = findRequest(id);
+    if (!r || !canViewRequest(r)) return "You can't comment on this request.";
+    const body = text.trim();
+    if (!body) return "Write a comment first.";
+    const entry = logEntry("comment", body);
+    setState((s) => ({
+      ...s,
+      supportRequests: s.supportRequests.map((x) => (x.id === id ? { ...x, updatedAt: entry.at, activity: [...x.activity, entry] } : x)),
+      notifications: notifySubmitter(s, r, "New reply on your request"),
+    }));
+    return null;
+  };
+
   const getRoom = (id: string) => callRooms.find((r) => r.id === id) ?? state.meetings.find((m) => m.id === id);
 
   const scheduleMeeting = (m: Omit<CallRoom, "id" | "kind">) => {
@@ -203,6 +274,14 @@ function useDemoValue() {
 
   return {
     loaded,
+    supportRequests: state.supportRequests,
+    getSupportRequest: findRequest,
+    canManageRequest,
+    canViewRequest,
+    submitSupportRequest,
+    assignSupportRequest,
+    setSupportRequestStatus,
+    commentOnSupportRequest,
     meetings: state.meetings,
     recaps: state.recaps,
     getRoom,
