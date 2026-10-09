@@ -1,8 +1,9 @@
 import { Link } from "@tanstack/react-router";
-import { CalendarClock, FileText, Headphones, Plus, Share2, Video } from "lucide-react";
+import { CalendarClock, FileText, Headphones, Plus, Radio, Share2, Video } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useDemo } from "@/lib/demo-store";
+import { useCallMode } from "@/lib/use-call-mode";
 import { roomPresence } from "@/data/calls";
 import { DEMO_TODAY } from "@/data/mock";
 import { formatDate } from "@/lib/format";
@@ -21,7 +22,9 @@ const initials = (n: string) => n.split(" ").map((p) => p[0]).join("");
 export function RoomCard({ room, showSociety }: { room: CallRoom; showSociety?: boolean }) {
   const { getSociety } = useDemo();
   const s = getSociety(room.societyId);
-  const people = roomPresence(room.id);
+  const mode = useCallMode();
+  // Scripted presence only makes sense in simulated mode; live rooms hold whoever actually joins.
+  const people = mode === "simulated" ? roomPresence(room.id) : [];
   if (!s) return null;
   return (
     <Link to="/call/$roomId" params={{ roomId: room.id }} className="card-interactive group flex items-center gap-3 rounded-xl border bg-card p-4 shadow-soft">
@@ -39,7 +42,8 @@ export function RoomCard({ room, showSociety }: { room: CallRoom; showSociety?: 
           </div>
           <span className="flex items-center gap-1 text-xs font-medium text-success"><span className="size-1.5 animate-pulse rounded-full bg-success" />{people.length}</span>
         </div>
-      ) : <span className="text-xs text-muted-foreground">Empty</span>}
+      ) : mode === "live" ? <span className="flex items-center gap-1 text-xs font-medium text-success"><Radio className="size-3.5" />Live</span>
+        : mode === "simulated" ? <span className="text-xs text-muted-foreground">Empty</span> : null}
     </Link>
   );
 }

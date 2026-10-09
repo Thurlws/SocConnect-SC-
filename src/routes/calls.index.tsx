@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { CalendarClock, FileText, Headphones } from "lucide-react";
+import { CalendarClock, FileText, Headphones, Radio } from "lucide-react";
 import { useDemo } from "@/lib/demo-store";
 import { callRooms } from "@/data/calls";
 import { DEMO_TODAY } from "@/data/mock";
 import { pageHead } from "@/lib/seo";
+import { useCallMode } from "@/lib/use-call-mode";
 import { DemoBadge, EmptyState } from "@/components/cards";
 import { MeetingCard, RecapCard, RoomCard, ScheduleCallDialog } from "@/components/calls";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ export const Route = createFileRoute("/calls/")({
 
 function CallsPage() {
   const { joinedSocieties, meetings, recaps } = useDemo();
+  const callMode = useCallMode();
   const joined = new Set(joinedSocieties.map((s) => s.id));
   const rooms = callRooms.filter((r) => joined.has(r.societyId));
   const upcoming = meetings.filter((m) => joined.has(m.societyId) && (m.date ?? "") >= DEMO_TODAY).sort((a, b) => `${a.date}${a.start}`.localeCompare(`${b.date}${b.start}`));
@@ -26,7 +28,8 @@ function CallsPage() {
         <div>
           <h1 className="font-display text-3xl font-semibold tracking-tight">Calls</h1>
           <p className="mt-1 text-muted-foreground">Hop into a room, join a scheduled call, and catch up with AI recaps — no Zoom links needed.</p>
-          <p className="mt-2 flex items-center gap-2 text-xs text-muted-foreground"><DemoBadge />Your camera and mic are real, but everyone else in a room is simulated. Real calls between members need a media provider, which isn't connected yet.</p>
+          {callMode === "live" && <p className="mt-2 flex items-center gap-2 text-xs text-muted-foreground"><Radio className="size-3.5 text-success" />Live calls are on: members who open the same room on different devices see and hear each other.</p>}
+          {callMode === "simulated" && <p className="mt-2 flex items-center gap-2 text-xs text-muted-foreground"><DemoBadge />Your camera and mic are real, but everyone else in a room is simulated. Real calls between members need LiveKit to be configured (see README).</p>}
         </div>
         {joinedSocieties.length > 0 && <ScheduleCallDialog />}
       </div>
