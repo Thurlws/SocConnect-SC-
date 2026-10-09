@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, CheckCircle2, ChevronDown, ListTodo, Loader2, MessageCircleQuestion, Send, Share2, Wand2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, ChevronDown, FileText, ListTodo, Loader2, MessageCircleQuestion, Send, Share2, Wand2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
@@ -7,6 +7,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useDemo } from "@/lib/demo-store";
 import { formatDate } from "@/lib/format";
 import { askAboutCall } from "@/lib/calls.functions";
+import { fallbackAnswer } from "@/lib/call-recap-fallback";
 import { SocietyAvatar } from "@/components/society-avatar";
 import { EmptyState } from "@/components/cards";
 import { Button } from "@/components/ui/button";
@@ -54,10 +55,9 @@ function RecapPage() {
     try {
       const { answer } = await ask({ data: { title: recap.title, transcript: recap.transcript, history, question: question.trim() } });
       updateRecapQa(recap.id, [...next, { role: "assistant", content: answer }]);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "The assistant couldn't answer.");
-      updateRecapQa(recap.id, history);
-      setQ(question);
+    } catch {
+      // Server unreachable: answer from the transcript instead of failing.
+      updateRecapQa(recap.id, [...next, { role: "assistant", content: fallbackAnswer(recap.transcript, question) }]);
     } finally {
       setBusy(false);
       inputRef.current?.focus();
@@ -71,7 +71,9 @@ function RecapPage() {
         <div className="flex items-center gap-4">
           {s && <SocietyAvatar society={s} size="lg" />}
           <div>
-            <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-primary"><Wand2 className="size-3.5" />AI call recap</p>
+            {recap.summary.source === "fallback"
+              ? <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground"><FileText className="size-3.5" />Call recap · basic summary, AI unavailable</p>
+              : <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-primary"><Wand2 className="size-3.5" />AI call recap</p>}
             <h1 className="font-display text-2xl font-semibold">{recap.title}</h1>
             <p className="text-sm text-muted-foreground">{formatDate(recap.date)} · {Math.max(1, Math.round(recap.durationSec / 60))} min · {recap.participants.join(", ")}</p>
           </div>

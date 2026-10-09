@@ -9,11 +9,11 @@ import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
 
 export function EventCard({ event, compact = false }: { event: Event; compact?: boolean }) {
-  const { getSociety, isRegistered, attendeeCount } = useDemo();
+  const { getSociety, attendeeCount, eventAvailability } = useDemo();
   const soc = getSociety(event.societyId)!;
   const { day, month } = dayParts(event.date);
   const count = attendeeCount(event);
-  const full = event.capacity !== undefined && count >= event.capacity && !isRegistered(event.id);
+  const availability = eventAvailability(event);
   return (
     <Link
       to="/events/$eventId"
@@ -37,10 +37,12 @@ export function EventCard({ event, compact = false }: { event: Event; compact?: 
         </div>
         <div className="flex items-center justify-between pt-2">
           <span className="flex items-center gap-1 text-xs text-muted-foreground"><Users className="size-3.5" />{count}{event.capacity ? ` / ${event.capacity}` : ""}</span>
-          {isRegistered(event.id) ? (
+          {availability === "registered" ? (
             <Badge variant="success"><Check className="size-3" />Registered</Badge>
-          ) : full ? (
-            <Badge variant="outline">Full · waitlist</Badge>
+          ) : availability === "full" ? (
+            <Badge variant="outline">Full</Badge>
+          ) : availability === "past" ? (
+            <Badge variant="outline">Ended</Badge>
           ) : (
             <Badge variant="soft">Open</Badge>
           )}

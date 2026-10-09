@@ -116,10 +116,49 @@ export interface CollaborationProposal {
 export interface MembershipRequest {
   id: string;
   societyId: string;
+  /** Set when the requester is a demo account, so approval can update their membership. */
+  userId?: string | undefined;
   name: string;
   course: string;
   message: string;
   requestedAt: string;
+}
+
+export interface ResolvedRequest extends MembershipRequest {
+  outcome: "approved" | "declined";
+  resolvedAt: string;
+  resolvedBy: string;
+}
+
+/** Lifecycle: open → in_progress → resolved (see src/lib/support-requests.ts for allowed moves). */
+export type SupportRequestStatus = "open" | "in_progress" | "resolved";
+export type SupportRequestCategory = "question" | "membership" | "event" | "equipment" | "finance" | "other";
+export type SupportRequestPriority = "low" | "normal" | "high";
+
+export interface SupportRequestActivity {
+  id: string;
+  at: string; // ISO datetime
+  actor: string;
+  kind: "created" | "status" | "assigned" | "comment";
+  text: string;
+}
+
+/** A member's request to a society committee (not a paid event ticket). */
+export interface SupportRequest {
+  id: string;
+  societyId: string;
+  title: string;
+  description: string;
+  category: SupportRequestCategory;
+  priority: SupportRequestPriority;
+  status: SupportRequestStatus;
+  submittedBy: string; // user id
+  submitterName: string;
+  assignedTo?: string | undefined; // committee member name
+  resolution?: string | undefined;
+  createdAt: string;
+  updatedAt: string;
+  activity: SupportRequestActivity[];
 }
 
 export interface CallRoom {
@@ -142,6 +181,8 @@ export interface TranscriptLine {
 }
 
 export interface CallSummary {
+  /** "fallback" = keyword-based recap written without the AI (see src/lib/call-recap-fallback.ts). */
+  source?: "ai" | "fallback" | undefined;
   overview: string;
   topics: string[];
   decisions: string[];

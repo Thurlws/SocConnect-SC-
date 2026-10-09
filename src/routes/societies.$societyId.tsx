@@ -1,13 +1,15 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { ArrowLeft, FileText, Hash, Lock, Megaphone, Pin, Send, CalendarClock, Users, Link2, ClipboardList, BookOpen } from "lucide-react";
+import { ArrowLeft, FileText, Hash, Lock, Megaphone, MessageSquarePlus, Pin, Send, CalendarClock, Users, Link2, ClipboardList, BookOpen } from "lucide-react";
 import { useState } from "react";
 import { useDemo } from "@/lib/demo-store";
 import { societies as baseSocieties, channels, resources, DEMO_TODAY } from "@/data/mock";
 import { timeAgo } from "@/lib/format";
 import { pageHead } from "@/lib/seo";
 import { SocietyAvatar, accentClasses } from "@/components/society-avatar";
-import { EventCard, EmptyState } from "@/components/cards";
+import { toast } from "sonner";
+import { EventCard, EmptyState, DemoBadge } from "@/components/cards";
 import { JoinButton } from "@/components/join-button";
+import { NewRequestDialog } from "@/components/support-requests";
 import { MeetingCard, RecapCard, RoomCard, ScheduleCallDialog } from "@/components/calls";
 import { callRooms } from "@/data/calls";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -30,7 +32,7 @@ const resIcon = { Guide: BookOpen, Link: Link2, Document: FileText, Form: Clipbo
 
 function SocietyPage() {
   const { societyId } = Route.useParams();
-  const { getSociety, membership, announcements, events, messages, postMessage, user, meetings, recaps } = useDemo();
+  const { getSociety, membership, announcements, events, messages, postMessage, user, meetings, recaps, approvedMembers } = useDemo();
   const s = getSociety(societyId)!;
   const isMember = membership(s.id) === "member";
   const a = accentClasses[s.accent];
@@ -40,6 +42,8 @@ function SocietyPage() {
   const [channel, setChannel] = useState(socChannels[0]?.id);
   const [draft, setDraft] = useState("");
   const socRes = resources.filter((r) => r.societyId === s.id);
+  // Committee, you, people approved from the committee inbox, then a few fictional sample members.
+  const shownMembers = [...new Set([...s.committee.map((c) => c.name), ...(isMember ? [user.name] : []), ...approvedMembers(s.id), "Aisha Bello", "Kevin Doherty", "Hana Sato"])];
 
   const MembersOnly = ({ what }: { what: string }) => (
     <EmptyState icon={Lock} title={`${what} are for members`} body={`Join ${s.shortName} to take part.`} action={<JoinButton society={s} />} />
@@ -57,7 +61,7 @@ function SocietyPage() {
             <SocietyAvatar society={s} size="lg" className="border-4 border-card bg-card" />
             <div className="pb-1">
               <h1 className="text-2xl font-semibold">{s.name}</h1>
-              <p className="text-sm text-muted-foreground">{s.category} · {s.memberCount + (isMember ? 0 : 0)} members · {s.meets}</p>
+              <p className="text-sm text-muted-foreground">{s.category} · {s.memberCount} members · {s.meets}</p>
             </div>
           </div>
           <JoinButton society={s} size="default" />
@@ -91,6 +95,12 @@ function SocietyPage() {
                   </li>
                 ))}
               </ul>
+              {isMember && (
+                <NewRequestDialog
+                  defaultSocietyId={s.id}
+                  trigger={<Button variant="outline" size="sm" className="mt-4 w-full"><MessageSquarePlus />Contact committee</Button>}
+                />
+              )}
             </div>
             <div className="rounded-xl border bg-card p-5 text-sm shadow-soft">
               <p className="font-semibold">Joining</p>
@@ -128,6 +138,7 @@ function SocietyPage() {
                 <div className="border-b px-5 py-3">
                   <p className="font-semibold">#{socChannels.find((c) => c.id === channel)?.name}</p>
                   <p className="text-xs text-muted-foreground">{socChannels.find((c) => c.id === channel)?.description}</p>
+                  <p className="mt-1 flex items-center gap-1.5 text-[11px] text-muted-foreground"><DemoBadge />Messages are saved in this browser only. Other members won't see them yet.</p>
                 </div>
                 <div className="flex-1 space-y-4 overflow-y-auto p-5">
                   {messages.filter((m) => m.channelId === channel).length === 0 && <p className="text-center text-sm text-muted-foreground">No messages yet — start the conversation.</p>}
@@ -143,10 +154,15 @@ function SocietyPage() {
                 </div>
                 <form
                   className="flex gap-2 border-t p-3"
-                  onSubmit={(e) => { e.preventDefault(); if (draft.trim() && channel) { postMessage(channel, draft.trim()); setDraft(""); } }}
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!channel) return;
+                    const o = postMessage(channel, draft);
+                    if (o.ok) setDraft(""); else toast.error(o.error);
+                  }}
                 >
-                  <Input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Write a message…" />
-                  <Button type="submit" size="icon" aria-label="Send"><Send /></Button>
+                  <Input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Write a message…" maxLength={1000} aria-label="Message" />
+                  <Button type="submit" size="icon" aria-label="Send" disabled={!draft.trim()}><Send /></Button>
                 </form>
               </div>
             </div>
@@ -193,10 +209,10 @@ function SocietyPage() {
           <div className="rounded-xl border bg-card p-6 shadow-soft">
             <div className="flex items-center gap-3"><Users className="size-5 text-primary" /><p className="font-semibold">{s.memberCount} members <span className="text-xs font-normal text-muted-foreground">(demo figure)</span></p></div>
             <div className="mt-4 flex flex-wrap gap-2">
-              {[...s.committee.map((c) => c.name), ...(isMember ? [user.name] : []), "Aisha Bello", "Kevin Doherty", "Hana Sato", "Sam Okafor"].map((n, i) => (
-                <span key={`${n}-${i}`} className="rounded-full border bg-surface px-3 py-1 text-xs">{n}</span>
+              {shownMembers.map((n) => (
+                <span key={n} className="rounded-full border bg-surface px-3 py-1 text-xs">{n}</span>
               ))}
-              <span className="rounded-full px-3 py-1 text-xs text-muted-foreground">+ {s.memberCount - 8} more</span>
+              {s.memberCount > shownMembers.length && <span className="rounded-full px-3 py-1 text-xs text-muted-foreground">+ {s.memberCount - shownMembers.length} more</span>}
             </div>
           </div>
         </TabsContent>
