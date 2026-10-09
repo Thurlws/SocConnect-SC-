@@ -11,6 +11,7 @@
 
 ## SocConnect architecture
 - All demo state lives in `src/lib/demo-store.tsx` (context + localStorage); pages never import mutable data directly — this is the seam the backend phase replaces with API calls.
+- Business rules are pure functions in `src/lib/demo-rules.ts` that return `{ ok, error }` (Outcome); store actions run them via `run()`. Add new rules there with tests in `src/test/demo-rules.test.ts`. State is per demo account (memberships, registrations, notifications).
 - Static mock data lives in `src/data/mock.ts` with a fixed DEMO_TODAY so the demo reads the same on any day.
 - Date formatting is manual in `src/lib/format.ts` (no toLocaleDateString) to avoid SSR hydration mismatches.
 - The app shell wraps every route except `/welcome` in `__root.tsx`.

@@ -15,6 +15,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { eventCategories, type EventInput } from "@/lib/demo-rules";
 
 export const Route = createFileRoute("/committee")({
   head: () => pageHead("Committee Dashboard", "Manage your society: announcements, events, members and profile."),
@@ -32,6 +34,7 @@ function Committee() {
   }
   const s = d.getSociety(d.user.committeeSocietyId)!;
   const reqs = d.requests.filter((r) => r.societyId === s.id);
+  const resolved = d.resolvedRequests.filter((r) => r.societyId === s.id);
   const upcoming = d.events.filter((e) => e.societyId === s.id && e.date >= DEMO_TODAY);
   const anns = d.announcements.filter((a) => a.societyId === s.id);
   const saved = proposals.filter((p) => d.savedProposals.includes(p.id));
@@ -58,7 +61,7 @@ function Committee() {
 
       <div className="grid gap-3 sm:grid-cols-3">
         {[
-          { k: "ann" as const, l: "Post announcement", d: "Reach every member instantly", icon: Megaphone },
+          { k: "ann" as const, l: "Post announcement", d: "Members' feeds and notifications", icon: Megaphone },
           { k: "event" as const, l: "Create event", d: "Publish to the events page", icon: CalendarPlus },
           { k: "edit" as const, l: "Edit society profile", d: "Name, tagline and description", icon: PencilLine },
         ].map((q) => (
@@ -85,12 +88,27 @@ function Committee() {
                   <p className="text-[11px] text-muted-foreground">{timeAgo(r.requestedAt)}</p>
                 </div>
                 <div className="flex gap-1">
-                  <Button size="icon" variant="outline" aria-label="Decline" onClick={() => { d.resolveRequest(r.id, false); toast(`Declined ${r.name}`); }}><X /></Button>
-                  <Button size="icon" aria-label="Approve" onClick={() => { d.resolveRequest(r.id, true); toast.success(`${r.name} approved`); }}><Check /></Button>
+                  <Button size="icon" variant="outline" aria-label={`Decline ${r.name}`} onClick={() => { const o = d.resolveRequest(r.id, "decline"); if (o.ok) toast(`Declined ${r.name} — they were not added as a member`); else toast.error(o.error); }}><X /></Button>
+                  <Button size="icon" aria-label={`Approve ${r.name}`} onClick={() => { const o = d.resolveRequest(r.id, "approve"); if (o.ok) toast.success(`${r.name} is now a member of ${s.shortName}`); else toast.error(o.error); }}><Check /></Button>
                 </div>
               </div>
             ))}
           </div>
+          {resolved.length > 0 && (
+            <>
+              <h3 className="mt-6 text-sm font-semibold">Recently reviewed</h3>
+              <ul className="mt-2 space-y-1.5">
+                {resolved.slice(0, 5).map((r) => (
+                  <li key={r.id} className="flex items-center justify-between gap-2 text-sm">
+                    <span className="truncate">{r.name} <span className="text-muted-foreground">· {r.course}</span></span>
+                    <span className={r.outcome === "approved" ? "shrink-0 rounded-full bg-success/15 px-2 py-0.5 text-xs font-medium text-success" : "shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"}>
+                      {r.outcome === "approved" ? "Approved" : "Declined"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
         </section>
         <section className="rounded-xl border bg-card p-5 shadow-soft">
           <h2 className="font-semibold">Upcoming events</h2>
@@ -119,7 +137,7 @@ function Committee() {
 }
 
 function AnnouncementDialog({ open, onClose, societyId }: { open: boolean; onClose: () => void; societyId: string }) {
-  const { postAnnouncement, user } = useDemo();
+  const { postAnnouncement } = useDemo();
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [pinned, setPinned] = useState(false);
@@ -127,11 +145,11 @@ function AnnouncementDialog({ open, onClose, societyId }: { open: boolean; onClo
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent>
-        <DialogHeader><DialogTitle>New announcement</DialogTitle><DialogDescription>Members will see this in the society page, their feed and notifications.</DialogDescription></DialogHeader>
+        <DialogHeader><DialogTitle>New announcement</DialogTitle><DialogDescription>Shown on the society page, members' feeds and their in-app notifications. <DemoBadge /> Saved in this browser only.</DialogDescription></DialogHeader>
         <form className="space-y-4" onSubmit={(e) => {
           e.preventDefault();
-          if (title.trim().length < 3 || body.trim().length < 10) { setErr("Add a title (3+ characters) and a message (10+ characters)."); return; }
-          postAnnouncement({ societyId, author: user.name, title: title.trim(), body: body.trim(), pinned });
+          const o = postAnnouncement(societyId, { title, body, pinned });
+          if (!o.ok) { setErr(o.error); return; }
           toast.success("Announcement published");
           setTitle(""); setBody(""); setPinned(false); setErr(""); onClose();
         }}>
@@ -158,12 +176,15 @@ function EventDialog({ open, onClose, societyId }: { open: boolean; onClose: () 
         <DialogHeader><DialogTitle>Create event</DialogTitle><DialogDescription>Published immediately to the events page. <DemoBadge /></DialogDescription></DialogHeader>
         <form className="space-y-3" onSubmit={(e) => {
           e.preventDefault();
-          if (!f.title.trim() || !f.venue.trim() || !f.date) { setErr("Title, date and venue are required."); return; }
-          if (f.date < DEMO_TODAY) { setErr("Pick a date after the demo's current date (12 Oct 2026)."); return; }
-          const id = createEvent({ societyId, title: f.title.trim(), description: f.description.trim() || "Details coming soon.", date: f.date, start: f.start, end: f.end || undefined, venue: f.venue.trim(), category: f.category, capacity: Number(f.capacity) || undefined, tags: ["Technology"] });
+          const o = createEvent(societyId, {
+            title: f.title, description: f.description, date: f.date, start: f.start, end: f.end || undefined, venue: f.venue,
+            category: f.category as EventInput["category"],
+            capacity: f.capacity.trim() === "" ? undefined : Number(f.capacity),
+          });
+          if (!o.ok) { setErr(o.error); return; }
           toast.success("Event published");
           setErr(""); onClose();
-          navigate({ to: "/events/$eventId", params: { eventId: id } });
+          if (o.id) navigate({ to: "/events/$eventId", params: { eventId: o.id } });
         }}>
           <div className="space-y-1.5"><Label>Title</Label><Input value={f.title} onChange={set("title")} maxLength={100} /></div>
           <div className="space-y-1.5"><Label>Description</Label><Textarea rows={3} value={f.description} onChange={set("description")} maxLength={1000} /></div>
@@ -174,9 +195,15 @@ function EventDialog({ open, onClose, societyId }: { open: boolean; onClose: () 
           </div>
           <div className="grid grid-cols-3 gap-2">
             <div className="col-span-2 space-y-1.5"><Label>Venue</Label><Input value={f.venue} onChange={set("venue")} /></div>
-            <div className="space-y-1.5"><Label>Capacity</Label><Input type="number" min={1} value={f.capacity} onChange={set("capacity")} /></div>
+            <div className="space-y-1.5"><Label>Capacity</Label><Input type="number" min={1} step={1} value={f.capacity} onChange={set("capacity")} placeholder="No limit" /></div>
           </div>
-          <div className="space-y-1.5"><Label>Category</Label><Input value={f.category} onChange={set("category")} /></div>
+          <div className="space-y-1.5">
+            <Label>Category</Label>
+            <Select value={f.category} onValueChange={(v) => setF({ ...f, category: v })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{eventCategories.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
           {err && <p className="text-sm text-destructive">{err}</p>}
           <DialogFooter><Button type="button" variant="ghost" onClick={onClose}>Cancel</Button><Button type="submit">Publish event</Button></DialogFooter>
         </form>
@@ -193,7 +220,7 @@ function EditDialog({ open, onClose, societyId }: { open: boolean; onClose: () =
     <Dialog open={open} onOpenChange={(o) => { if (o) setF({ tagline: s.tagline, description: s.description, meets: s.meets }); else onClose(); }}>
       <DialogContent>
         <DialogHeader><DialogTitle className="flex items-center gap-2"><SocietyAvatar society={s} size="sm" />Edit {s.shortName}</DialogTitle></DialogHeader>
-        <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); editSociety(societyId, f); toast.success("Society profile updated"); onClose(); }}>
+        <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); const o = editSociety(societyId, f); if (!o.ok) { toast.error(o.error); return; } toast.success("Society profile updated"); onClose(); }}>
           <div className="space-y-1.5"><Label>Tagline</Label><Input value={f.tagline} onChange={(e) => setF({ ...f, tagline: e.target.value })} maxLength={80} /></div>
           <div className="space-y-1.5"><Label>Description</Label><Textarea rows={5} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} maxLength={800} /></div>
           <div className="space-y-1.5"><Label>When & where you meet</Label><Input value={f.meets} onChange={(e) => setF({ ...f, meets: e.target.value })} maxLength={80} /></div>

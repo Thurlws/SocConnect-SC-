@@ -51,19 +51,22 @@ function SettingsPage() {
         </div>
         {role === "committee" && <p className="mt-3 text-xs text-muted-foreground">Interests are editable on the student demo account.</p>}
       </Card>
-      <Card title="Notifications">
+      <Card title="Notifications" desc="In-app notifications only. Membership decisions are always shown.">
         <div className="space-y-4">
           {([
-            ["announcements", "Society announcements"],
-            ["events", "Event reminders"],
-            ["discussions", "Discussion replies"],
-            ["email", "Weekly email digest"],
+            ["announcements", "New announcements from my societies"],
+            ["events", "Event updates: new events, registrations, scheduled calls"],
+            ["discussions", "Discussion activity, such as shared call recaps"],
           ] as const).map(([k, l]) => (
-            <div key={k} className="flex items-center justify-between">
+            <div key={k} className="flex items-center justify-between gap-4">
               <Label htmlFor={k}>{l}</Label>
               <Switch id={k} checked={prefs[k]} onCheckedChange={(v) => setPref(k, v)} />
             </div>
           ))}
+          <div className="flex items-center justify-between gap-4">
+            <Label htmlFor="email" className="text-muted-foreground">Weekly email digest · not available in this prototype</Label>
+            <Switch id="email" checked={false} disabled />
+          </div>
         </div>
       </Card>
       <Card title="Account" desc="University sign-in will be connected in the next phase.">
