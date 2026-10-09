@@ -8,6 +8,7 @@ import { pageHead } from "@/lib/seo";
 import { timeAgo } from "@/lib/format";
 import { PageHeader, EmptyState, DemoBadge } from "@/components/cards";
 import { SocietyAvatar } from "@/components/society-avatar";
+import { CommitteeRequestsSummary } from "@/components/support-requests";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -67,6 +68,8 @@ function Committee() {
           </button>
         ))}
       </div>
+
+      <CommitteeRequestsSummary societyId={s.id} />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="rounded-xl border bg-card p-5 shadow-soft">
