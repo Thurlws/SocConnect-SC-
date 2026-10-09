@@ -12,14 +12,20 @@ import {
   useTracks,
   type TrackReferenceOrPlaceholder,
 } from "@livekit/components-react";
-import { Track } from "livekit-client";
-import { Copy, MicOff, Users } from "lucide-react";
+import { Track, type Participant } from "livekit-client";
+import { MicOff, QrCode, Users } from "lucide-react";
 import { useEffect, useRef, type MutableRefObject, type ReactNode } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { InviteDialog } from "@/components/invite-dialog";
 
 const TRANSCRIPT_TOPIC = "transcript";
+// Stable literals for useTracks: a fresh array/options object on every render makes the
+// hook re-subscribe, and the tiles briefly lose everyone but you — it looks like people
+// are dropping out of the call.
+const CAMERA_TRACKS = [{ source: Track.Source.Camera, withPlaceholder: true }];
+const ALL_TRACKS = { onlySubscribed: false };
 const initials = (n: string) =>
   n
     .split(" ")
@@ -128,37 +134,57 @@ export function LiveCallBridge({
 }
 
 /** Video tiles for everyone in the room, plus an invite card while you're alone. */
-export function LiveTiles({ accentSolid }: { accentSolid: string }) {
-  const tracks = useTracks([{ source: Track.Source.Camera, withPlaceholder: true }], {
-    onlySubscribed: false,
-  });
+export function LiveTiles({ accentSolid, roomId, roomName, societyName }: { accentSolid: string; roomId: string; roomName: string; societyName?: string | undefined }) {
+  const tracks = useTracks(CAMERA_TRACKS, ALL_TRACKS);
+  const participants = useParticipants();
+  // Tiles follow the people in the room, not the video tracks: someone whose
+  // camera hasn't arrived yet still gets a tile with their initials, so the call
+  // never looks like a person dropped out.
+  const covered = new Set(tracks.map((t) => t.participant.identity));
+  const cameraless = participants.filter((p) => !covered.has(p.identity));
   return (
     <>
       {tracks.map((t) => (
         <LiveTile
-          key={`${t.participant.identity}-${t.source}`}
+          key={t.participant.identity}
+          participant={t.participant}
           trackRef={t}
           accentSolid={accentSolid}
         />
       ))}
-      {tracks.length <= 1 && <InviteTile />}
+      {cameraless.map((p) => (
+        <LiveTile key={p.identity} participant={p} accentSolid={accentSolid} />
+      ))}
+      {participants.length <= 1 && <InviteTile roomId={roomId} roomName={roomName} societyName={societyName} />}
     </>
   );
 }
 
+/** "2 in the call" — counts everyone the room actually knows about. */
+export function CallHeaderCount() {
+  const participants = useParticipants();
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-surface px-2.5 py-1 text-xs font-semibold">
+      <span className="size-2 animate-pulse rounded-full bg-success" />
+      {participants.length} in the call
+    </span>
+  );
+}
+
 function LiveTile({
+  participant,
   trackRef,
   accentSolid,
 }: {
-  trackRef: TrackReferenceOrPlaceholder;
+  participant: Participant;
+  trackRef?: TrackReferenceOrPlaceholder | undefined;
   accentSolid: string;
 }) {
-  const p = trackRef.participant;
-  const speaking = useIsSpeaking(p);
-  const camMuted = useIsMuted(trackRef);
-  const micMuted = useIsMuted({ participant: p, source: Track.Source.Microphone });
-  const name = p.name || p.identity;
-  const showVideo = isTrackReference(trackRef) && !camMuted;
+  const speaking = useIsSpeaking(participant);
+  const camMuted = useIsMuted({ participant, source: Track.Source.Camera });
+  const micMuted = useIsMuted({ participant, source: Track.Source.Microphone });
+  const name = participant.name || participant.identity;
+  const showVideo = trackRef !== undefined && isTrackReference(trackRef) && !camMuted;
 
   return (
     <div
@@ -170,7 +196,7 @@ function LiveTile({
       {showVideo ? (
         <VideoTrack
           trackRef={trackRef}
-          className={cn("h-full w-full object-cover", p.isLocal && "-scale-x-100")}
+          className={cn("h-full w-full object-cover", participant.isLocal && "-scale-x-100")}
         />
       ) : (
         <span
@@ -184,33 +210,23 @@ function LiveTile({
       )}
       <span className="absolute bottom-3 left-3 flex items-center gap-1.5 rounded-lg bg-ink/70 px-2 py-1 text-xs">
         {micMuted && <MicOff className="size-3" />}
-        {p.isLocal ? `${name} (you)` : name}
+        {participant.isLocal ? `${name} (you)` : name}
       </span>
     </div>
   );
 }
 
-function InviteTile() {
+function InviteTile({ roomId, roomName, societyName }: { roomId: string; roomName: string; societyName?: string | undefined }) {
   return (
     <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-ink-foreground/20 p-6 text-center">
       <Users className="size-6 opacity-60" />
       <p className="text-sm font-semibold">Waiting for others to join</p>
       <p className="max-w-xs text-xs opacity-70">
-        Anyone who opens this call from another laptop joins you here. Share the link:
+        Point a phone camera at the code, or send the link — it opens this call straight away.
       </p>
-      <Button
-        size="sm"
-        variant="secondary"
-        onClick={() => {
-          navigator.clipboard
-            ?.writeText(window.location.href)
-            .then(() => toast.success("Call link copied"))
-            .catch(() => toast.message(window.location.href));
-        }}
-      >
-        <Copy />
-        Copy call link
-      </Button>
+      <InviteDialog roomId={roomId} roomName={roomName} societyName={societyName}>
+        <Button size="sm" variant="secondary"><QrCode />Show QR & link</Button>
+      </InviteDialog>
     </div>
   );
 }

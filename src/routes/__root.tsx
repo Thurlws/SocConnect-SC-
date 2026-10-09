@@ -108,7 +108,9 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const bare = pathname === "/welcome";
+  // /welcome is the intro; /join is a call opened from a shared link or QR code —
+  // both show the page on its own, without the app menu.
+  const bare = pathname === "/welcome" || pathname.startsWith("/join");
 
   return (
     <QueryClientProvider client={queryClient}>

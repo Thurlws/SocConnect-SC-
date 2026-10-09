@@ -21,6 +21,7 @@ import { Route as CallRoomIdRouteImport } from './routes/call.$roomId'
 import { Route as CallsIndexRouteImport } from './routes/calls.index'
 import { Route as EventsIndexRouteImport } from './routes/events.index'
 import { Route as EventsEventIdRouteImport } from './routes/events.$eventId'
+import { Route as JoinRoomIdRouteImport } from './routes/join.$roomId'
 import { Route as RecapsRecapIdRouteImport } from './routes/recaps.$recapId'
 import { Route as RequestsIndexRouteImport } from './routes/requests.index'
 import { Route as RequestsRequestIdRouteImport } from './routes/requests.$requestId'
@@ -87,6 +88,11 @@ const EventsEventIdRoute = EventsEventIdRouteImport.update({
   path: '/events/$eventId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const JoinRoomIdRoute = JoinRoomIdRouteImport.update({
+  id: '/join/$roomId',
+  path: '/join/$roomId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RecapsRecapIdRoute = RecapsRecapIdRouteImport.update({
   id: '/recaps/$recapId',
   path: '/recaps/$recapId',
@@ -124,6 +130,7 @@ export interface FileRoutesByFullPath {
   '/welcome': typeof WelcomeRoute
   '/call/$roomId': typeof CallRoomIdRoute
   '/events/$eventId': typeof EventsEventIdRoute
+  '/join/$roomId': typeof JoinRoomIdRoute
   '/recaps/$recapId': typeof RecapsRecapIdRoute
   '/requests/$requestId': typeof RequestsRequestIdRoute
   '/societies/$societyId': typeof SocietiesSocietyIdRoute
@@ -143,6 +150,7 @@ export interface FileRoutesByTo {
   '/welcome': typeof WelcomeRoute
   '/call/$roomId': typeof CallRoomIdRoute
   '/events/$eventId': typeof EventsEventIdRoute
+  '/join/$roomId': typeof JoinRoomIdRoute
   '/recaps/$recapId': typeof RecapsRecapIdRoute
   '/requests/$requestId': typeof RequestsRequestIdRoute
   '/societies/$societyId': typeof SocietiesSocietyIdRoute
@@ -163,6 +171,7 @@ export interface FileRoutesById {
   '/welcome': typeof WelcomeRoute
   '/call/$roomId': typeof CallRoomIdRoute
   '/events/$eventId': typeof EventsEventIdRoute
+  '/join/$roomId': typeof JoinRoomIdRoute
   '/recaps/$recapId': typeof RecapsRecapIdRoute
   '/requests/$requestId': typeof RequestsRequestIdRoute
   '/societies/$societyId': typeof SocietiesSocietyIdRoute
@@ -184,6 +193,7 @@ export interface FileRouteTypes {
     | '/welcome'
     | '/call/$roomId'
     | '/events/$eventId'
+    | '/join/$roomId'
     | '/recaps/$recapId'
     | '/requests/$requestId'
     | '/societies/$societyId'
@@ -203,6 +213,7 @@ export interface FileRouteTypes {
     | '/welcome'
     | '/call/$roomId'
     | '/events/$eventId'
+    | '/join/$roomId'
     | '/recaps/$recapId'
     | '/requests/$requestId'
     | '/societies/$societyId'
@@ -222,6 +233,7 @@ export interface FileRouteTypes {
     | '/welcome'
     | '/call/$roomId'
     | '/events/$eventId'
+    | '/join/$roomId'
     | '/recaps/$recapId'
     | '/requests/$requestId'
     | '/societies/$societyId'
@@ -242,6 +254,7 @@ export interface RootRouteChildren {
   WelcomeRoute: typeof WelcomeRoute
   CallRoomIdRoute: typeof CallRoomIdRoute
   EventsEventIdRoute: typeof EventsEventIdRoute
+  JoinRoomIdRoute: typeof JoinRoomIdRoute
   RecapsRecapIdRoute: typeof RecapsRecapIdRoute
   RequestsRequestIdRoute: typeof RequestsRequestIdRoute
   SocietiesSocietyIdRoute: typeof SocietiesSocietyIdRoute
@@ -337,6 +350,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EventsEventIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/join/$roomId': {
+      id: '/join/$roomId'
+      path: '/join/$roomId'
+      fullPath: '/join/$roomId'
+      preLoaderRoute: typeof JoinRoomIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/recaps/$recapId': {
       id: '/recaps/$recapId'
       path: '/recaps/$recapId'
@@ -386,6 +406,7 @@ const rootRouteChildren: RootRouteChildren = {
   WelcomeRoute: WelcomeRoute,
   CallRoomIdRoute: CallRoomIdRoute,
   EventsEventIdRoute: EventsEventIdRoute,
+  JoinRoomIdRoute: JoinRoomIdRoute,
   RecapsRecapIdRoute: RecapsRecapIdRoute,
   RequestsRequestIdRoute: RequestsRequestIdRoute,
   SocietiesSocietyIdRoute: SocietiesSocietyIdRoute,
