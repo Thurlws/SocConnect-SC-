@@ -67,6 +67,7 @@ Demo societies, events, memberships, and statistics should be treated as sample 
 - Tailwind CSS v4 with shadcn/ui (Radix) components, Lucide icons
 - Zod for input validation, Sonner toasts, Vitest + Testing Library
 - AI call recaps through server functions (`src/lib/calls.functions.ts`); the `LOVABLE_API_KEY` stays on the server
+- Real multi-person video calls via LiveKit when configured (`src/components/live-call.tsx`); tokens are minted server-side
 
 There is **no backend database or real authentication yet**. All app state is demo state in the browser (see *Demo mode* below).
 
@@ -104,14 +105,40 @@ Business rules are pure functions in `src/lib/demo-rules.ts`, tested in `src/tes
 - **Events:** no duplicate registrations, no registering beyond capacity (there's no waitlist) and no registering for past events. Attendee and member counts are derived from the seeded figures plus demo actions. Registered events can be exported as `.ics`.
 - **Committee actions** (announcements, events, profile edits) are checked against the acting account's society and validated with Zod (lengths, end time after start, capacity of at least 1, no past dates).
 - **Notifications** are in-app only and follow the toggles in Settings. Identical unread notifications aren't repeated. There's no email or push delivery.
+- **Member requests:** members send a structured request (category, priority, details) to a society's committee and track it from Open → In progress → Resolved. Only the sender and that society's committee can see it; only the committee can assign, change status or resolve, and resolving needs a note the member sees. Rules are in `demo-rules.ts` like everything else.
 - **Discussions** are saved in this browser only and aren't real-time.
-- **Calls:** your camera and mic are real; the other participants are scripted. There are no real calls between members yet.
+- **Calls:** with LiveKit configured (see below), people on different devices join the same room for real, and everyone's captions feed one transcript and recap. Without it, your camera and mic are real but the other participants are scripted. Recaps fall back to a labelled keyword summary when the AI isn't available.
+- **Shared vs. per-browser:** live calls are the only thing shared between devices. Requests, memberships, events and messages stay in each browser, so demo those on one laptop by switching accounts.
 
 To move to a real backend, re-implement the `demo-rules.ts` checks on the server and in database policies (for example Supabase row-level security). They shouldn't stay client-side only.
 
+## Live video calls (LiveKit)
+
+Society calls are real multi-person video calls when LiveKit is configured. Without it they fall back to a demo with simulated participants, so nothing breaks.
+
+1. Create a free project at [LiveKit Cloud](https://cloud.livekit.io) and copy its **URL**, **API key** and **API secret**.
+2. Locally: `cp .env.example .env` and fill in `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`.
+3. When hosted: add the same three variables to the hosting provider's environment variables (never to `VITE_*` variables or committed files).
+
+The lobby shows **"Join as"** and **"Live call"** when it's working. Open the same call link on another device to join each other.
+
+- **Camera and mic need HTTPS.** Use the deployed URL on other laptops. `http://<your-ip>:<port>` won't get camera access (only `localhost` is exempt).
+- **Live captions use the browser's speech recognition (Chrome/Edge).** In other browsers, type into the transcript box. Typed and spoken lines are shared with everyone in the call and feed the recap.
+- Use a society's built-in rooms (e.g. CompSoc → Calls → Planning huddle) for multi-device demos. Scheduled calls only exist in the browser that created them.
+
+## Deploying to Vercel
+
+The app builds for Vercel without extra configuration: Nitro detects Vercel and outputs a Node serverless function.
+
+1. Import the GitHub repo in Vercel and keep the default settings.
+2. Add environment variables: `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`.
+3. Deploy. Vercel gives you an HTTPS URL that works on any laptop.
+
+AI recaps use the Lovable AI gateway (`LOVABLE_API_KEY`), which is provided on Lovable hosting. On Vercel without that key, recaps still work as a labelled basic summary.
+
 ## Demo walkthrough
 
-A 2–3 minute flow that only uses working features (reset the demo data first):
+A 3–4 minute flow that only uses working features (reset the demo data first):
 
 1. **Welcome → Explore as a student** (Alex). Home shows registrations, announcements and recommendations.
 2. **Discover Societies** → open **CompSoc** → **Joined → Leave**. CompSoc needs approval, so click **Request to join**. The button now shows *Pending · cancel*.
@@ -119,8 +146,11 @@ A 2–3 minute flow that only uses working features (reset the demo data first):
 4. Profile menu → **Jordan Lee · Committee**. The **Committee** page lists Alex's request. **Approve** it: the member count goes up and it shows under *Recently reviewed*. **Decline** a different request to show it doesn't add a member.
 5. Post an announcement and create an event. Try an end time before the start time to show the validation.
 6. Switch back to Alex. The bell shows *"You're in! CompSoc approved your request"* and the new announcement.
-7. **Society Pulse** → pick two societies → explore a curated idea (labelled as a proposal, not a confirmed event).
-8. **Calls** → join a room. Point out that the camera is real, the other participants are simulated, and you get a recap at the end.
+7. **CompSoc → Contact committee** → send *"Can I borrow a laptop for Hack Night?"*. It opens on its own page as **Open**.
+8. Switch to Jordan → **Request Inbox** → open it → assign it to Priya → **Mark in progress** → reply → resolve it with a note.
+9. Switch back to Alex. The bell shows *"Your request was resolved"*, and the request shows the resolution and the full timeline.
+10. **Society Pulse** → pick two societies → explore a curated idea (labelled as a proposal, not a confirmed event).
+11. **Calls** → CompSoc → *Planning huddle*. With LiveKit configured, open the same room on a second laptop (deployed HTTPS URL) and talk. Otherwise the other participants are simulated. Leave to get the recap.
 
 Say clearly that the data is fictional and stored only in this browser.
 
