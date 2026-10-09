@@ -13,7 +13,8 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { DemoProvider } from "@/lib/demo-store";
+import { DataProvider } from "@/lib/api/store";
+import { AuthProvider } from "@/lib/auth";
 import { AppShell } from "@/components/app-shell";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -110,14 +111,16 @@ function RootComponent() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   // /welcome is the intro; /join is a call opened from a shared link or QR code —
   // both show the page on its own, without the app menu.
-  const bare = pathname === "/welcome" || pathname.startsWith("/join");
+  const bare = pathname === "/welcome" || pathname === "/onboarding" || pathname.startsWith("/join");
 
   return (
     <QueryClientProvider client={queryClient}>
-      <DemoProvider>
-        {bare ? <Outlet /> : <AppShell><Outlet /></AppShell>}
-        <Toaster position="bottom-right" />
-      </DemoProvider>
+      <AuthProvider>
+        <DataProvider>
+          {bare ? <Outlet /> : <AppShell><Outlet /></AppShell>}
+          <Toaster position="bottom-right" />
+        </DataProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

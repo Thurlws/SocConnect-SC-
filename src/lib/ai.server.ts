@@ -61,3 +61,39 @@ export async function aiObject<T>(instructions: string, prompt: string, schema: 
     throw friendly(e);
   }
 }
+
+const STT_MODEL = "openai/gpt-transcribe";
+
+/** Transcribe one short audio clip via the gateway (streamed SSE, collected server-side). */
+export async function aiTranscribe(audio: Uint8Array, mime: string): Promise<string> {
+  const apiKey = process.env["LOVABLE_API_KEY"];
+  if (!apiKey) throw new AiError(401, "AI is not configured.");
+  const type = mime.startsWith("audio/") ? mime.split(";")[0]! : "audio/webm";
+  const ext = type.includes("mp4") ? "mp4" : type.includes("ogg") ? "ogg" : type.includes("wav") ? "wav" : "webm";
+  const form = new FormData();
+  form.append("model", STT_MODEL);
+  form.append("file", new File([audio as Uint8Array<ArrayBuffer>], `clip.${ext}`, { type }));
+  form.append("response_format", "json");
+  form.append("stream", "true");
+  const res = await fetch(`${BASE}/audio/transcriptions`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "X-Lovable-AIG-SDK": "fetch" },
+    body: form,
+  });
+  if (!res.ok) throw friendly(Object.assign(new Error(await res.text().catch(() => "Transcription failed")), { statusCode: res.status }));
+  const body = await res.text();
+  let deltas = "";
+  let done = "";
+  for (const raw of body.split("\n")) {
+    const l = raw.trim();
+    if (!l.startsWith("data:")) continue;
+    const payload = l.slice(5).trim();
+    if (!payload || payload === "[DONE]") continue;
+    try {
+      const ev = JSON.parse(payload) as { type?: string; delta?: string; text?: string };
+      if (ev.type === "transcript.text.delta" && ev.delta) deltas += ev.delta;
+      else if (ev.type === "transcript.text.done" && typeof ev.text === "string") done = ev.text;
+    } catch { /* ignore */ }
+  }
+  return (done || deltas).trim();
+}

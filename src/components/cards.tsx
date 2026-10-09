@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { CalendarDays, Check, Clock, MapPin, Users } from "lucide-react";
-import { useDemo } from "@/lib/demo-store";
+import { useData } from "@/lib/api/store";
 import { dayParts, formatDate } from "@/lib/format";
 import type { Event, Society } from "@/lib/types";
 import { SocietyAvatar, accentClasses } from "@/components/society-avatar";
@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
 
 export function EventCard({ event, compact = false }: { event: Event; compact?: boolean }) {
-  const { getSociety, attendeeCount, eventAvailability } = useDemo();
+  const { getSociety, attendeeCount, eventAvailability } = useData();
   const soc = getSociety(event.societyId)!;
   const { day, month } = dayParts(event.date);
   const count = attendeeCount(event);
@@ -53,7 +53,7 @@ export function EventCard({ event, compact = false }: { event: Event; compact?: 
 }
 
 export function SocietyCard({ society, reason, action }: { society: Society; reason?: string; action?: ReactNode }) {
-  const { membership } = useDemo();
+  const { membership } = useData();
   const status = membership(society.id);
   return (
     <div className="card-interactive relative flex flex-col rounded-xl border bg-card p-5 shadow-soft">

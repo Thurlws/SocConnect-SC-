@@ -222,7 +222,7 @@ function InviteTile({ roomId, roomName, societyName }: { roomId: string; roomNam
       <Users className="size-6 opacity-60" />
       <p className="text-sm font-semibold">Waiting for others to join</p>
       <p className="max-w-xs text-xs opacity-70">
-        Point a phone camera at the code, or send the link — it opens this call straight away.
+        Members can open this room from SocConnect. Committee members can also share a guest link or QR code.
       </p>
       <InviteDialog roomId={roomId} roomName={roomName} societyName={societyName}>
         <Button size="sm" variant="secondary"><QrCode />Show QR & link</Button>

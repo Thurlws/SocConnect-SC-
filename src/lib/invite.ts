@@ -1,20 +1,18 @@
 /**
- * Invite links: a shared URL or a scanned QR code takes someone straight into a call,
- * the way a Zoom "join" link does — no sign-in, no membership check, no app chrome.
- *
- * The bare call page lives at /join/$roomId (see src/routes/join.$roomId.tsx).
+ * Guest links: a committee-made code (stored hashed, with expiry and a use limit) opens a
+ * call without an account. The bare call page lives at /join/$code.
  */
 
-/** Same-site path that opens a call directly. */
-export const joinPath = (roomId: string) => `/join/${encodeURIComponent(roomId.trim())}`;
+/** Same-site path for a guest invite code. */
+export const joinPath = (code: string) => `/join/${encodeURIComponent(code.trim())}`;
 
 /**
  * Absolute invite URL for a room.
  * Returns null when the origin isn't a normal web address (e.g. SSR, where
  * window.location.origin is "null") so callers never encode junk into a QR code.
  */
-export function inviteUrl(roomId: string, origin: string): string | null {
-  const id = roomId.trim();
+export function inviteUrl(code: string, origin: string): string | null {
+  const id = code.trim();
   const base = origin.trim().replace(/\/+$/, "");
   if (!id || !/^https?:\/\/[^\s/]+$/i.test(base)) return null;
   return `${base}${joinPath(id)}`;

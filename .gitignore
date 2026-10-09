@@ -31,10 +31,10 @@ dist-ssr
 *.sln
 *.sw?
 
-# Local secrets (e.g. LOVABLE_API_KEY) — never commit
-.env
-.env.*
-!.env.example
+# Real secrets live in Lovable Cloud secrets, never in files.
+# .env holds only public backend settings and must be committed so published builds can reach the backend.
+.env.local
+.env.*.local
 
 # Vercel build output
 .vercel
