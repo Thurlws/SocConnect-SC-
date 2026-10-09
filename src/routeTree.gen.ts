@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CommitteeRouteImport } from './routes/committee'
 import { Route as CommunicationsRouteImport } from './routes/communications'
+import { Route as InboxRouteImport } from './routes/inbox'
 import { Route as MySocietiesRouteImport } from './routes/my-societies'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SocietyPulseRouteImport } from './routes/society-pulse'
@@ -21,6 +22,8 @@ import { Route as CallsIndexRouteImport } from './routes/calls.index'
 import { Route as EventsIndexRouteImport } from './routes/events.index'
 import { Route as EventsEventIdRouteImport } from './routes/events.$eventId'
 import { Route as RecapsRecapIdRouteImport } from './routes/recaps.$recapId'
+import { Route as RequestsIndexRouteImport } from './routes/requests.index'
+import { Route as RequestsRequestIdRouteImport } from './routes/requests.$requestId'
 import { Route as SocietiesIndexRouteImport } from './routes/societies.index'
 import { Route as SocietiesSocietyIdRouteImport } from './routes/societies.$societyId'
 
@@ -37,6 +40,11 @@ const CommitteeRoute = CommitteeRouteImport.update({
 const CommunicationsRoute = CommunicationsRouteImport.update({
   id: '/communications',
   path: '/communications',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InboxRoute = InboxRouteImport.update({
+  id: '/inbox',
+  path: '/inbox',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MySocietiesRoute = MySocietiesRouteImport.update({
@@ -84,6 +92,16 @@ const RecapsRecapIdRoute = RecapsRecapIdRouteImport.update({
   path: '/recaps/$recapId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RequestsIndexRoute = RequestsIndexRouteImport.update({
+  id: '/requests/',
+  path: '/requests/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RequestsRequestIdRoute = RequestsRequestIdRouteImport.update({
+  id: '/requests/$requestId',
+  path: '/requests/$requestId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SocietiesIndexRoute = SocietiesIndexRouteImport.update({
   id: '/societies/',
   path: '/societies/',
@@ -99,6 +117,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/committee': typeof CommitteeRoute
   '/communications': typeof CommunicationsRoute
+  '/inbox': typeof InboxRoute
   '/my-societies': typeof MySocietiesRoute
   '/settings': typeof SettingsRoute
   '/society-pulse': typeof SocietyPulseRoute
@@ -106,15 +125,18 @@ export interface FileRoutesByFullPath {
   '/call/$roomId': typeof CallRoomIdRoute
   '/events/$eventId': typeof EventsEventIdRoute
   '/recaps/$recapId': typeof RecapsRecapIdRoute
+  '/requests/$requestId': typeof RequestsRequestIdRoute
   '/societies/$societyId': typeof SocietiesSocietyIdRoute
   '/calls/': typeof CallsIndexRoute
   '/events/': typeof EventsIndexRoute
+  '/requests/': typeof RequestsIndexRoute
   '/societies/': typeof SocietiesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/committee': typeof CommitteeRoute
   '/communications': typeof CommunicationsRoute
+  '/inbox': typeof InboxRoute
   '/my-societies': typeof MySocietiesRoute
   '/settings': typeof SettingsRoute
   '/society-pulse': typeof SocietyPulseRoute
@@ -122,9 +144,11 @@ export interface FileRoutesByTo {
   '/call/$roomId': typeof CallRoomIdRoute
   '/events/$eventId': typeof EventsEventIdRoute
   '/recaps/$recapId': typeof RecapsRecapIdRoute
+  '/requests/$requestId': typeof RequestsRequestIdRoute
   '/societies/$societyId': typeof SocietiesSocietyIdRoute
   '/calls': typeof CallsIndexRoute
   '/events': typeof EventsIndexRoute
+  '/requests': typeof RequestsIndexRoute
   '/societies': typeof SocietiesIndexRoute
 }
 export interface FileRoutesById {
@@ -132,6 +156,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/committee': typeof CommitteeRoute
   '/communications': typeof CommunicationsRoute
+  '/inbox': typeof InboxRoute
   '/my-societies': typeof MySocietiesRoute
   '/settings': typeof SettingsRoute
   '/society-pulse': typeof SocietyPulseRoute
@@ -139,9 +164,11 @@ export interface FileRoutesById {
   '/call/$roomId': typeof CallRoomIdRoute
   '/events/$eventId': typeof EventsEventIdRoute
   '/recaps/$recapId': typeof RecapsRecapIdRoute
+  '/requests/$requestId': typeof RequestsRequestIdRoute
   '/societies/$societyId': typeof SocietiesSocietyIdRoute
   '/calls/': typeof CallsIndexRoute
   '/events/': typeof EventsIndexRoute
+  '/requests/': typeof RequestsIndexRoute
   '/societies/': typeof SocietiesIndexRoute
 }
 export interface FileRouteTypes {
@@ -150,6 +177,7 @@ export interface FileRouteTypes {
     | '/'
     | '/committee'
     | '/communications'
+    | '/inbox'
     | '/my-societies'
     | '/settings'
     | '/society-pulse'
@@ -157,15 +185,18 @@ export interface FileRouteTypes {
     | '/call/$roomId'
     | '/events/$eventId'
     | '/recaps/$recapId'
+    | '/requests/$requestId'
     | '/societies/$societyId'
     | '/calls/'
     | '/events/'
+    | '/requests/'
     | '/societies/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/committee'
     | '/communications'
+    | '/inbox'
     | '/my-societies'
     | '/settings'
     | '/society-pulse'
@@ -173,15 +204,18 @@ export interface FileRouteTypes {
     | '/call/$roomId'
     | '/events/$eventId'
     | '/recaps/$recapId'
+    | '/requests/$requestId'
     | '/societies/$societyId'
     | '/calls'
     | '/events'
+    | '/requests'
     | '/societies'
   id:
     | '__root__'
     | '/'
     | '/committee'
     | '/communications'
+    | '/inbox'
     | '/my-societies'
     | '/settings'
     | '/society-pulse'
@@ -189,9 +223,11 @@ export interface FileRouteTypes {
     | '/call/$roomId'
     | '/events/$eventId'
     | '/recaps/$recapId'
+    | '/requests/$requestId'
     | '/societies/$societyId'
     | '/calls/'
     | '/events/'
+    | '/requests/'
     | '/societies/'
   fileRoutesById: FileRoutesById
 }
@@ -199,6 +235,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CommitteeRoute: typeof CommitteeRoute
   CommunicationsRoute: typeof CommunicationsRoute
+  InboxRoute: typeof InboxRoute
   MySocietiesRoute: typeof MySocietiesRoute
   SettingsRoute: typeof SettingsRoute
   SocietyPulseRoute: typeof SocietyPulseRoute
@@ -206,9 +243,11 @@ export interface RootRouteChildren {
   CallRoomIdRoute: typeof CallRoomIdRoute
   EventsEventIdRoute: typeof EventsEventIdRoute
   RecapsRecapIdRoute: typeof RecapsRecapIdRoute
+  RequestsRequestIdRoute: typeof RequestsRequestIdRoute
   SocietiesSocietyIdRoute: typeof SocietiesSocietyIdRoute
   CallsIndexRoute: typeof CallsIndexRoute
   EventsIndexRoute: typeof EventsIndexRoute
+  RequestsIndexRoute: typeof RequestsIndexRoute
   SocietiesIndexRoute: typeof SocietiesIndexRoute
 }
 
@@ -233,6 +272,13 @@ declare module '@tanstack/react-router' {
       path: '/communications'
       fullPath: '/communications'
       preLoaderRoute: typeof CommunicationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/inbox': {
+      id: '/inbox'
+      path: '/inbox'
+      fullPath: '/inbox'
+      preLoaderRoute: typeof InboxRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/my-societies': {
@@ -298,6 +344,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RecapsRecapIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/requests/': {
+      id: '/requests/'
+      path: '/requests'
+      fullPath: '/requests/'
+      preLoaderRoute: typeof RequestsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/requests/$requestId': {
+      id: '/requests/$requestId'
+      path: '/requests/$requestId'
+      fullPath: '/requests/$requestId'
+      preLoaderRoute: typeof RequestsRequestIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/societies/': {
       id: '/societies/'
       path: '/societies'
@@ -319,6 +379,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CommitteeRoute: CommitteeRoute,
   CommunicationsRoute: CommunicationsRoute,
+  InboxRoute: InboxRoute,
   MySocietiesRoute: MySocietiesRoute,
   SettingsRoute: SettingsRoute,
   SocietyPulseRoute: SocietyPulseRoute,
@@ -326,9 +387,11 @@ const rootRouteChildren: RootRouteChildren = {
   CallRoomIdRoute: CallRoomIdRoute,
   EventsEventIdRoute: EventsEventIdRoute,
   RecapsRecapIdRoute: RecapsRecapIdRoute,
+  RequestsRequestIdRoute: RequestsRequestIdRoute,
   SocietiesSocietyIdRoute: SocietiesSocietyIdRoute,
   CallsIndexRoute: CallsIndexRoute,
   EventsIndexRoute: EventsIndexRoute,
+  RequestsIndexRoute: RequestsIndexRoute,
   SocietiesIndexRoute: SocietiesIndexRoute,
 }
 export const routeTree = rootRouteImport
