@@ -17,15 +17,15 @@ function MySocieties() {
   const pending = societies.filter((s) => membership(s.id) === "pending");
   return (
     <div className="space-y-10">
-      <PageHeader title="My societies" subtitle="Your communities and pending requests." actions={<Button asChild variant="outline"><Link to="/societies">Find more</Link></Button>} />
+      <PageHeader title="My societies" subtitle="Societies you've joined, and any requests still waiting on a committee." actions={<Button asChild variant="outline"><Link to="/societies">Find more</Link></Button>} />
       {joined.length ? (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{joined.map((s) => <SocietyCard key={s.id} society={s} action={<JoinButton society={s} full />} />)}</div>
       ) : (
-        <EmptyState icon={Users} title="You haven't joined any societies" body="Discover communities that match your interests." action={<Button asChild size="sm"><Link to="/societies">Discover societies</Link></Button>} />
+        <EmptyState icon={Users} title="You haven't joined any societies" body="Find a society that does something you're into and join it here." action={<Button asChild size="sm"><Link to="/societies">Find societies</Link></Button>} />
       )}
       {pending.length > 0 && (
         <section>
-          <h2 className="mb-4 text-lg font-semibold">Pending requests</h2>
+          <h2 className="mb-4 text-xl font-bold">Waiting for approval</h2>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{pending.map((s) => <SocietyCard key={s.id} society={s} action={<JoinButton society={s} full />} />)}</div>
         </section>
       )}

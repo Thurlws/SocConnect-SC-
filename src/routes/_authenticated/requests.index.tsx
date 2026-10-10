@@ -46,8 +46,8 @@ function MyRequests() {
             className={cn(
               "rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
               tab === t.k
-                ? "border-primary bg-primary-soft text-primary"
-                : "bg-card hover:border-primary/40",
+                ? "border-ink bg-highlight text-ink"
+                : "bg-card hover:border-ink/40",
             )}
           >
             {t.l} <span className="text-muted-foreground">{t.n}</span>

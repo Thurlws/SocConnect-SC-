@@ -5,14 +5,15 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * SocConnect design system. Warm off-white canvas, midnight-navy text,
- * indigo primary, muted teal secondary. Society accents are separate
- * tokens (--soc-*) so every society has an identity inside one system.
+ * SocConnect design system: a society noticeboard. Ink on paper, a highlighter
+ * for whatever is selected or yours, and flat poster colours for societies
+ * (--soc-*) so every society keeps its identity. No gradients or glows.
+ * Type is Archivo throughout; headings use its wider cut.
  */
 
 @theme inline {
-  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Bricolage Grotesque", "Plus Jakarta Sans", ui-sans-serif, sans-serif;
+  --font-sans: "Archivo", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Archivo", ui-sans-serif, system-ui, sans-serif;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -27,6 +28,7 @@
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary-soft: var(--primary-soft);
+  --color-highlight: var(--highlight);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-teal: var(--teal);
@@ -66,59 +68,58 @@
 }
 
 :root {
-  --radius: 0.75rem;
-  --background: oklch(0.985 0.006 85);
-  --surface: oklch(0.965 0.008 85);
-  --foreground: oklch(0.22 0.035 265);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.22 0.035 265);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.22 0.035 265);
-  --primary: oklch(0.5 0.19 272);
-  --primary-foreground: oklch(0.99 0.005 272);
-  --primary-soft: oklch(0.95 0.035 272);
-  --secondary: oklch(0.955 0.01 85);
-  --secondary-foreground: oklch(0.22 0.035 265);
-  --teal: oklch(0.62 0.09 182);
-  --teal-soft: oklch(0.95 0.03 182);
-  --muted: oklch(0.955 0.008 85);
-  --muted-foreground: oklch(0.5 0.025 265);
-  --accent: oklch(0.95 0.012 272);
-  --accent-foreground: oklch(0.22 0.035 265);
-  --destructive: oklch(0.58 0.2 27);
-  --destructive-foreground: oklch(0.99 0 0);
-  --success: oklch(0.6 0.13 155);
-  --warning: oklch(0.72 0.14 70);
-  --border: oklch(0.91 0.01 85);
-  --input: oklch(0.89 0.012 85);
-  --ring: oklch(0.5 0.19 272);
-  --ink: oklch(0.2 0.04 268);
-  --ink-foreground: oklch(0.97 0.01 85);
-  --sidebar: oklch(0.975 0.007 85);
-  --sidebar-foreground: oklch(0.3 0.03 265);
-  --sidebar-primary: oklch(0.5 0.19 272);
-  --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.94 0.02 272);
-  --sidebar-accent-foreground: oklch(0.22 0.035 265);
-  --sidebar-border: oklch(0.92 0.01 85);
-  --sidebar-ring: oklch(0.5 0.19 272);
+  --radius: 0.5rem;
 
-  --soc-indigo: oklch(0.52 0.18 272);
-  --soc-teal: oklch(0.6 0.1 185);
-  --soc-coral: oklch(0.65 0.17 35);
-  --soc-amber: oklch(0.72 0.15 70);
-  --soc-rose: oklch(0.6 0.19 10);
-  --soc-sky: oklch(0.62 0.13 235);
-  --soc-emerald: oklch(0.6 0.13 155);
-  --soc-plum: oklch(0.5 0.15 320);
+  /* Paper, ink and a highlighter. */
+  --background: #f3f3ef;
+  --surface: #eaeae4;
+  --foreground: #1b1c1a;
+  --card: #ffffff;
+  --card-foreground: #1b1c1a;
+  --popover: #ffffff;
+  --popover-foreground: #1b1c1a;
+  --primary: #1b1c1a;
+  --primary-foreground: #ffffff;
+  --primary-soft: #fff1bf;
+  --highlight: #ffd84d;
+  --secondary: #eaeae4;
+  --secondary-foreground: #1b1c1a;
+  --teal: #15706a;
+  --teal-soft: #e1efed;
+  --muted: #ecece7;
+  --muted-foreground: #5d605a;
+  --accent: #ecece7;
+  --accent-foreground: #1b1c1a;
+  --destructive: #b3261e;
+  --destructive-foreground: #ffffff;
+  --success: #2e7d4f;
+  --warning: #8f5e00;
+  --border: #dcdcd5;
+  --input: #cfcfc7;
+  --ring: #1b1c1a;
+  --ink: #1b1c1a;
+  --ink-foreground: #f6f6f2;
+  --sidebar: #f3f3ef;
+  --sidebar-foreground: #2b2d2a;
+  --sidebar-primary: #1b1c1a;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e6e6df;
+  --sidebar-accent-foreground: #1b1c1a;
+  --sidebar-border: #dcdcd5;
+  --sidebar-ring: #1b1c1a;
 
-  --gradient-hero: radial-gradient(120% 120% at 0% 0%, oklch(0.93 0.06 272) 0%, transparent 55%),
-    radial-gradient(90% 100% at 100% 100%, oklch(0.94 0.05 182) 0%, transparent 55%),
-    var(--card);
-  --gradient-pulse: radial-gradient(70% 70% at 50% 45%, oklch(0.3 0.08 272) 0%, oklch(0.18 0.04 268) 70%);
-  --gradient-brand: linear-gradient(135deg, var(--primary), oklch(0.6 0.12 200));
-  --shadow-soft: 0 1px 2px oklch(0.2 0.03 265 / 0.04), 0 2px 8px -2px oklch(0.2 0.03 265 / 0.06);
-  --shadow-lift: 0 2px 4px oklch(0.2 0.03 265 / 0.04), 0 12px 28px -10px oklch(0.4 0.12 272 / 0.22);
+  /* Society colours: flat poster inks, all readable as text on white. */
+  --soc-indigo: #34407a;
+  --soc-teal: #17736c;
+  --soc-coral: #b8492f;
+  --soc-amber: #9a6700;
+  --soc-rose: #b23a55;
+  --soc-sky: #2c6a99;
+  --soc-emerald: #2c7a4b;
+  --soc-plum: #7b3f73;
+
+  --shadow-soft: 0 1px 0 0 rgb(27 28 26 / 0.04);
+  --shadow-lift: 0 2px 6px -2px rgb(27 28 26 / 0.1), 0 14px 32px -14px rgb(27 28 26 / 0.28);
 }
 
 @layer base {
@@ -133,30 +134,66 @@
     color: var(--color-foreground);
     font-family: var(--font-sans);
   }
-  h1, h2, h3 {
+  h1, h2 {
     font-family: var(--font-display);
-    letter-spacing: -0.02em;
+    font-stretch: 112.5%;
+    letter-spacing: -0.015em;
+  }
+  h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.005em;
+  }
+  ::selection {
+    background-color: var(--color-highlight);
+    color: var(--color-ink);
   }
 }
 
-@utility bg-hero {
-  background: var(--gradient-hero);
+/* Headline cut of Archivo, for type used as a display element outside h1/h2. */
+@utility font-wide {
+  font-stretch: 112.5%;
+  letter-spacing: -0.015em;
 }
-@utility bg-pulse {
-  background: var(--gradient-pulse);
+
+/* A highlighter stroke behind whatever is selected (active nav item, picked filter). */
+@utility marker {
+  position: relative;
+  isolation: isolate;
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0.125rem -0.125rem;
+    z-index: -1;
+    border-radius: 0.2rem 0.45rem 0.3rem 0.5rem;
+    background-color: var(--color-highlight);
+    transform: rotate(-0.6deg);
+  }
 }
-@utility bg-brand {
-  background: var(--gradient-brand);
-}
-@utility card-interactive {
-  transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+
+/* Links that read as links in running text and lists: ink with a highlighter underline. */
+@utility link-ink {
+  font-weight: 600;
+  text-decoration-line: underline;
+  text-decoration-color: var(--color-highlight);
+  text-decoration-thickness: 3px;
+  text-underline-offset: 3px;
   &:hover {
-    box-shadow: var(--shadow-lift);
-    transform: translateY(-2px);
-    border-color: color-mix(in oklab, var(--primary) 25%, var(--border));
+    text-decoration-color: var(--color-ink);
   }
 }
 
+@utility card-interactive {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  &:hover {
+    border-color: color-mix(in oklab, var(--color-ink) 40%, var(--color-border));
+    box-shadow: 0 1px 0 0 var(--color-ink);
+  }
+}
+
+/* Used by the Society Pulse network until it's rebuilt. */
+@utility bg-pulse {
+  background: var(--ink);
+}
 @keyframes pulse-ring {
   0% { transform: scale(1); opacity: 0.6; }
   100% { transform: scale(1.9); opacity: 0; }

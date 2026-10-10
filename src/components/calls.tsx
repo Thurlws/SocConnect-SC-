@@ -73,7 +73,7 @@ export function RecapCard({ recap }: { recap: CallRecap }) {
   return (
     <Link to="/recaps/$recapId" params={{ recapId: recap.id }} className="card-interactive block rounded-xl border bg-card p-4 shadow-soft">
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <FileText className="size-3.5 text-primary" />{s?.shortName} · {formatDate(recap.date)} · {Math.round(recap.durationSec / 60)} min
+        <FileText className="size-3.5" />{s?.shortName}, {formatDate(recap.date)}, {Math.round(recap.durationSec / 60)} min
         {recap.shared && <span className="ml-auto flex items-center gap-1"><Share2 className="size-3" />Shared</span>}
       </div>
       <p className="mt-2 text-sm font-semibold">{recap.title}</p>

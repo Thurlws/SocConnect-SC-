@@ -47,7 +47,7 @@ function Comms() {
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap gap-2">
           {kinds.map(({ k, l, icon: I }) => (
-            <button key={k} onClick={() => setKind(k)} className={cn("flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium", kind === k ? "border-primary bg-primary text-primary-foreground" : "bg-card")}>
+            <button key={k} onClick={() => setKind(k)} className={cn("flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium", kind === k ? "border-ink bg-highlight text-ink" : "bg-card hover:border-ink/40")}>
               <I className="size-3.5" />{l} <span className="opacity-70">{k === "all" ? items.length : items.filter((i) => i.kind === k).length}</span>
             </button>
           ))}

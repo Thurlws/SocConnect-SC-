@@ -36,7 +36,7 @@ export function monthLabel(year: number, month: number) {
 
 export function dayParts(iso: string) {
   const d = new Date(`${iso}T12:00:00`);
-  return { day: String(d.getDate()).padStart(2, "0"), month: MO[d.getMonth()]!.slice(0, 3).toUpperCase() };
+  return { day: String(d.getDate()).padStart(2, "0"), month: MO[d.getMonth()]!.slice(0, 3) };
 }
 
 export function timeAgo(iso: string) {

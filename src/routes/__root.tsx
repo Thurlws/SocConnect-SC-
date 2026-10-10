@@ -68,10 +68,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "SocConnect — One university. Every society. Connected." },
-      { name: "description", content: "Discover university societies, join communities, find events and stay in the loop — all in one place." },
+      { title: "SocConnect: TU Dublin societies and events" },
+      { name: "description", content: "Find TU Dublin societies, join the ones you like, and keep up with their events, posts and calls." },
       { property: "og:title", content: "SocConnect" },
-      { property: "og:description", content: "One university. Every society. Connected." },
+      { property: "og:description", content: "Find TU Dublin societies and keep up with their events." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -82,7 +82,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap",
       },
     ],
   }),

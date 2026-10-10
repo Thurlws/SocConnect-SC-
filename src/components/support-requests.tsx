@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { ArrowRight, Check, Inbox, MessageSquarePlus, UserRound } from "lucide-react";
+import { Check, Inbox, MessageSquarePlus, UserRound } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { useData } from "@/lib/api/store";
@@ -282,8 +282,8 @@ export function NewRequestDialog({
                     className={cn(
                       "rounded-full border px-3 py-1 text-sm font-medium transition-colors",
                       f.priority === p
-                        ? "border-primary bg-primary-soft text-primary"
-                        : "bg-card hover:border-primary/40",
+                        ? "border-ink bg-highlight text-ink"
+                        : "bg-card hover:border-ink/40",
                     )}
                     aria-pressed={f.priority === p}
                   >
@@ -326,13 +326,12 @@ export function CommitteeRequestsSummary({ societyId }: { societyId: string }) {
             Member requests
           </h2>
           <p className="text-sm text-muted-foreground">
-            {open} open · {inProgress} in progress
+            {open} open, {inProgress} in progress
           </p>
         </div>
         <Button asChild size="sm" variant="outline">
           <Link to="/inbox">
             Open inbox
-            <ArrowRight />
           </Link>
         </Button>
       </div>
@@ -347,7 +346,7 @@ export function CommitteeRequestsSummary({ societyId }: { societyId: string }) {
             key={r.id}
             to="/requests/$requestId"
             params={{ requestId: r.id }}
-            className="flex items-center justify-between gap-3 rounded-lg border p-3 hover:border-primary/30"
+            className="flex items-center justify-between gap-3 rounded-lg border p-3 hover:border-ink/40"
           >
             <span className="min-w-0">
               <span className="block truncate text-sm font-semibold">{r.title}</span>

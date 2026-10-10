@@ -46,6 +46,8 @@ function SocietyPage({ societyId }: { societyId: string }) {
   const today = todayIso();
   const isMember = membership(s.id) === "member";
   const a = accentClasses[s.accent];
+  // Imported taglines are often the description's first sentence cut short; don't print it twice.
+  const showTagline = !!s.tagline && !s.description.startsWith(s.tagline.replace(/[….\s]+$/, ""));
   const banner = safeHref(s.bannerUrl);
   const socAnn = announcements.filter((x) => x.societyId === s.id);
   const socEvents = events.filter((e) => e.societyId === s.id && e.date >= today);
@@ -70,31 +72,30 @@ function SocietyPage({ societyId }: { societyId: string }) {
             ? <img src={banner} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover" />
             : <div className={cn("h-full w-full opacity-30 [background-image:radial-gradient(currentColor_1px,transparent_1px)] [background-size:16px_16px]", a.text)} />}
         </div>
-        <div className="flex flex-col gap-4 px-6 pb-6 sm:flex-row sm:items-end sm:justify-between">
-          <div className="-mt-10 flex items-end gap-4">
-            <SocietyAvatar society={s} size="lg" className="border-4 border-card bg-card" />
-            <div className="pb-1">
-              <h1 className="text-2xl font-semibold">{s.name}</h1>
-              <p className="text-sm text-muted-foreground">{[s.category, s.campus && `${s.campus} campus`, `${s.memberCount} members`, s.meets].filter(Boolean).join(" · ")}</p>
-            </div>
+        <div className="px-6 pb-6">
+          <div className="flex items-start justify-between gap-4">
+            <SocietyAvatar society={s} size="lg" className="-mt-8 border-4 border-card bg-card" />
+            <div className="pt-4"><JoinButton society={s} size="default" /></div>
           </div>
-          <JoinButton society={s} size="default" />
+          <h1 className="mt-3 text-2xl font-bold sm:text-3xl">{s.name}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{[s.category, s.campus && `${s.campus} campus`, `${s.memberCount} members`].filter(Boolean).join(", ")}</p>
         </div>
       </div>
 
       <Tabs key={hash.startsWith("announcement-") ? "announcement" : "overview"} defaultValue={hash.startsWith("announcement-") ? "announcements" : "overview"} className="mt-6">
         <TabsList className="h-auto flex-wrap justify-start bg-transparent p-0">
           {["overview", "announcements", "discussions", "calls", "events", "resources", "members"].map((t) => (
-            <TabsTrigger key={t} value={t} className="rounded-full capitalize data-[state=active]:bg-primary-soft data-[state=active]:text-primary data-[state=active]:shadow-none">{t}</TabsTrigger>
+            <TabsTrigger key={t} value={t} className="rounded-md capitalize data-[state=active]:bg-highlight data-[state=active]:text-ink data-[state=active]:shadow-none">{t}</TabsTrigger>
           ))}
         </TabsList>
 
         <TabsContent value="overview" className="mt-6 grid gap-6 lg:grid-cols-3">
           <div className="space-y-4 lg:col-span-2">
             <div className="rounded-xl border bg-card p-6 shadow-soft">
-              <p className={cn("text-sm font-semibold", a.text)}>{s.tagline}</p>
-              <p className="mt-3 whitespace-pre-line leading-relaxed text-muted-foreground">{s.description || "This society hasn't published a description yet."}</p>
-              <div className="mt-4 flex flex-wrap gap-1.5">{s.tags.map((t) => <span key={t} className="rounded-full bg-muted px-2.5 py-0.5 text-xs">{t}</span>)}</div>
+              {showTagline && <p className={cn("mb-3 text-sm font-semibold", a.text)}>{s.tagline}</p>}
+              <p className="whitespace-pre-line leading-relaxed text-muted-foreground">{s.description || "This society hasn't published a description yet."}</p>
+              {s.meets && !s.extraSections?.some((x) => x.title === "Meetings") && <p className="mt-4 text-sm"><span className="font-semibold">Meets: </span><span className="text-muted-foreground">{s.meets}</span></p>}
+              {s.tags.length > 0 && <div className="mt-4 flex flex-wrap gap-1.5">{s.tags.map((t) => <span key={t} className="rounded-md bg-muted px-2 py-0.5 text-xs">{t}</span>)}</div>}
             </div>
             {(s.extraSections ?? []).map((x) => (
               <div key={x.title} className="rounded-xl border bg-card p-6 shadow-soft">
@@ -126,7 +127,7 @@ function SocietyPage({ societyId }: { societyId: string }) {
             <OfficialInfo society={s} />
             <div className="rounded-xl border bg-card p-5 text-sm shadow-soft">
               <p className="font-semibold">Joining</p>
-              <p className="mt-1 text-muted-foreground">{s.requiresApproval ? "Membership requests are reviewed by the committee." : "Open to all students — join instantly."}</p>
+              <p className="mt-1 text-muted-foreground">{s.requiresApproval ? "Membership requests are reviewed by the committee." : "Open to all students. You're in as soon as you join."}</p>
             </div>
           </div>
         </TabsContent>
@@ -136,8 +137,8 @@ function SocietyPage({ societyId }: { societyId: string }) {
           {socAnn.map((x) => (
             <article key={x.id} id={`announcement-${x.id}`} className="scroll-mt-20 rounded-xl border bg-card p-5 shadow-soft">
               <p className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Megaphone className={cn("size-3.5", a.text)} />{x.author} · {timeAgo(x.createdAt)}
-                {x.pinned && <span className="flex items-center gap-1 font-medium text-primary"><Pin className="size-3" />Pinned</span>}
+                <Megaphone className={cn("size-3.5", a.text)} />{x.author}, {timeAgo(x.createdAt)}
+                {x.pinned && <span className="flex items-center gap-1 font-medium text-foreground"><Pin className="size-3" />Pinned</span>}
               </p>
               <h3 className="mt-2 font-semibold">{x.title}</h3>
               <p className="mt-1 text-sm text-muted-foreground">{x.body}</p>
@@ -149,9 +150,9 @@ function SocietyPage({ societyId }: { societyId: string }) {
           {!isMember ? <MembersOnly what="Discussions" /> : (
             <div className="grid overflow-hidden rounded-xl border bg-card shadow-soft md:grid-cols-[220px_1fr]">
               <div className="border-b bg-surface p-3 md:border-b-0 md:border-r">
-                <p className="px-2 pb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Channels</p>
+                <p className="px-2 pb-2 text-xs font-semibold text-muted-foreground">Channels</p>
                 {socChannels.map((c) => (
-                  <button key={c.id} onClick={() => setChannel(c.id)} className={cn("flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm", channel === c.id ? "bg-card font-semibold text-primary shadow-soft" : "text-muted-foreground hover:bg-card")}>
+                  <button key={c.id} onClick={() => setChannel(c.id)} className={cn("flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm", channel === c.id ? "bg-card font-semibold text-ink" : "text-muted-foreground hover:bg-card")}>
                     <Hash className="size-3.5" />{c.name}
                   </button>
                 ))}
@@ -163,7 +164,7 @@ function SocietyPage({ societyId }: { societyId: string }) {
                   <p className="mt-1 text-[11px] text-muted-foreground">Only members of {s.shortName} can read this channel.</p>
                 </div>
                 <div className="flex-1 space-y-4 overflow-y-auto p-5">
-                  {messages.filter((m) => m.channelId === channel).length === 0 && <p className="text-center text-sm text-muted-foreground">No messages yet — start the conversation.</p>}
+                  {messages.filter((m) => m.channelId === channel).length === 0 && <p className="text-center text-sm text-muted-foreground">No messages yet. Say hello.</p>}
                   {messages.filter((m) => m.channelId === channel).map((m) => (
                     <div key={m.id} className="flex gap-3">
                       <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold", m.author === user.name ? "bg-ink text-ink-foreground" : "bg-muted")}>{m.author.split(" ").map((p) => p[0]).join("")}</span>
@@ -195,7 +196,7 @@ function SocietyPage({ societyId }: { societyId: string }) {
           {!isMember ? <MembersOnly what="Calls" /> : (
             <div className="space-y-6">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <p className="text-sm text-muted-foreground">Drop into a room any time, or schedule a call. Every call gets an AI recap.</p>
+                <p className="text-sm text-muted-foreground">Drop into a room any time, or schedule a call. Every call ends with a written recap.</p>
                 <ScheduleCallDialog defaultSocietyId={s.id} />
               </div>
               <div className="grid gap-3 md:grid-cols-2">{rooms.filter((r) => r.societyId === s.id).map((r) => <RoomCard key={r.id} room={r} />)}</div>
@@ -211,7 +212,7 @@ function SocietyPage({ societyId }: { societyId: string }) {
 
         <TabsContent value="events" className="mt-6">
           {socEvents.length ? <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{socEvents.map((e) => <EventCard key={e.id} event={e} />)}</div>
-            : <EmptyState icon={CalendarClock} title="No upcoming events" body="Check back soon — new events are added regularly." />}
+            : <EmptyState icon={CalendarClock} title="No upcoming events" body="When the committee adds an event, it'll show up here." />}
         </TabsContent>
 
         <TabsContent value="resources" className="mt-6">

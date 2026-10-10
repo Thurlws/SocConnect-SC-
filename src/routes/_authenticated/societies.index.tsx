@@ -43,8 +43,8 @@ function Discover() {
 
   return (
     <div>
-      <PageHeader title="Discover societies" subtitle={`${societies.length} societies across campus. Find your people.`} />
-      <div className="mb-6 space-y-4 rounded-xl border bg-card p-4 shadow-soft">
+      <PageHeader title="Discover societies" subtitle={`${societies.length} societies. Search by name, or filter by campus and what you're into.`} />
+      <div className="mb-6 flex flex-col gap-4 rounded-xl border bg-card p-4">
         <div className="flex flex-col gap-3 md:flex-row">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -78,13 +78,13 @@ function Discover() {
         </div>
         <div className="flex flex-wrap gap-2">
           {cats.map((c) => (
-            <button key={c} onClick={() => setCat(c)} className={cn("rounded-full border px-3 py-1 text-xs font-medium transition-colors", cat === c ? "border-primary bg-primary text-primary-foreground" : "bg-card hover:border-primary/40")}>{c}</button>
+            <button key={c} onClick={() => setCat(c)} className={cn("rounded-full border px-3 py-1 text-xs font-medium transition-colors", cat === c ? "border-ink bg-highlight text-ink" : "bg-card hover:border-ink/40")}>{c}</button>
           ))}
         </div>
         <div className="flex flex-wrap items-center gap-2 border-t pt-3">
           <span className="text-xs text-muted-foreground">Interests:</span>
           {allInterests.map((t) => (
-            <button key={t} onClick={() => setTags((x) => (x.includes(t) ? x.filter((y) => y !== t) : [...x, t]))} className={cn("rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-colors", tags.includes(t) ? "bg-teal text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-teal-soft")}>{t}</button>
+            <button key={t} onClick={() => setTags((x) => (x.includes(t) ? x.filter((y) => y !== t) : [...x, t]))} className={cn("rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-colors", tags.includes(t) ? "bg-highlight text-ink" : "bg-muted text-muted-foreground hover:bg-surface")}>{t}</button>
           ))}
         </div>
       </div>

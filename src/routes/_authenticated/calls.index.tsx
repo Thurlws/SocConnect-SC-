@@ -25,8 +25,8 @@ function CallsPage() {
     <div className="space-y-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl font-semibold tracking-tight">Calls</h1>
-          <p className="mt-1 text-muted-foreground">Hop into a room, join a scheduled call, and catch up with AI recaps — no Zoom links needed.</p>
+          <h1 className="text-3xl font-bold sm:text-4xl">Calls</h1>
+          <p className="mt-2 text-[15px] text-muted-foreground">Drop into a society room or join a scheduled call. When it ends, everyone gets a written recap.</p>
           {callMode === "live" && <p className="mt-2 flex items-center gap-2 text-xs text-muted-foreground"><Radio className="size-3.5 text-success" />Live calls are on: members who open the same room on different devices see and hear each other.</p>}
           {callMode === "simulated" && <p className="mt-2 text-xs text-muted-foreground">Calls aren't available yet. A platform admin needs to set up the call service.</p>}
         </div>
@@ -49,7 +49,7 @@ function CallsPage() {
           <section>
             <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold"><FileText className="size-4 text-primary" />Recent recaps</h2>
             {myRecaps.length ? <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{myRecaps.map((r) => <RecapCard key={r.id} recap={r} />)}</div>
-              : <p className="text-sm text-muted-foreground">AI recaps appear here after a call ends.</p>}
+              : <p className="text-sm text-muted-foreground">Recaps appear here after a call ends.</p>}
           </section>
         </>
       )}

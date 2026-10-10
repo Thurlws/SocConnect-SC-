@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, CalendarDays, Compass, Megaphone, Pin, Search, Sparkles } from "lucide-react";
+import { CalendarDays, Compass, Megaphone, Pin } from "lucide-react";
 import { useData } from "@/lib/api/store";
 import { pageHead } from "@/lib/seo";
 import { todayIso } from "@/lib/format";
@@ -18,7 +18,9 @@ export const Route = createFileRoute("/_authenticated/")({
 function Home() {
   const { user, events, joinedSocieties, announcements, societies, isRegistered, getSociety, recommendations } = useData();
   const fits = useSocietyFits();
-  const upcoming = events.filter((e) => e.date >= todayIso());
+  const upcoming = events.filter((e) => e.date >= todayIso()).sort((a, b) => `${a.date} ${a.start}`.localeCompare(`${b.date} ${b.start}`));
+  const next = upcoming.find((e) => isRegistered(e.id));
+  const nextSociety = next && getSociety(next.societyId);
   const mine = upcoming.filter((e) => isRegistered(e.id) || joinedSocieties.some((s) => s.id === e.societyId)).slice(0, 4);
   const joinedIds = new Set(joinedSocieties.map((s) => s.id));
   const recent = announcements.filter((a) => joinedIds.has(a.societyId)).slice(0, 4);
@@ -29,33 +31,25 @@ function Home() {
 
   return (
     <div className="space-y-12">
-      <section className="relative overflow-hidden rounded-2xl border bg-hero p-8 shadow-soft sm:p-10">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span>{formatDate(todayIso(), { weekday: "long", day: "numeric", month: "long" })}</span>
-        </div>
-        <h1 className="mt-3 text-3xl font-semibold sm:text-4xl">{greeting()}, {user.name.split(" ")[0]}.</h1>
-        <p className="mt-2 max-w-xl text-muted-foreground">Your communities, upcoming plans, and new opportunities — all in one place.</p>
+      <section>
+        <p className="text-sm text-muted-foreground">{formatDate(todayIso(), { weekday: "long", day: "numeric", month: "long" })}</p>
+        <h1 className="mt-2 text-4xl font-bold sm:text-5xl">{greeting()}, {user.name.split(" ")[0]}.</h1>
+        <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-muted-foreground">
+          {next && nextSociety
+            ? `Next up is ${next.title} with ${nextSociety.shortName}, ${formatDate(next.date, { weekday: "long", day: "numeric", month: "long" })} at ${next.start}.`
+            : joinedSocieties.length
+              ? `Nothing booked yet. Your societies have ${mine.length} event${mine.length === 1 ? "" : "s"} coming up.`
+              : "Join a society and its events and posts will show up here."}
+        </p>
         <div className="mt-6 flex flex-wrap gap-3">
-          <Button asChild><Link to="/societies"><Compass />Explore Societies</Link></Button>
-          <Button asChild variant="outline"><Link to="/events"><CalendarDays />Discover Events</Link></Button>
-        </div>
-        <div className="mt-8 grid max-w-lg grid-cols-3 gap-3">
-          {[
-            { k: joinedSocieties.length, l: "Societies" },
-            { k: upcoming.filter((e) => isRegistered(e.id)).length, l: "Registered events" },
-            { k: recent.length, l: "New announcements" },
-          ].map((x) => (
-            <div key={x.l} className="rounded-xl border bg-card/80 px-4 py-3">
-              <p className="font-display text-2xl font-semibold">{x.k}</p>
-              <p className="text-xs text-muted-foreground">{x.l}</p>
-            </div>
-          ))}
+          <Button asChild><Link to="/societies"><Compass />Find societies</Link></Button>
+          <Button asChild variant="outline"><Link to="/events"><CalendarDays />See what's on</Link></Button>
         </div>
       </section>
 
       <AskSocConnect />
       <section>
-        <SectionHeader title="Coming up for you" subtitle="From your societies and registrations" action={<Link to="/events" className="flex items-center gap-1 text-sm font-medium text-primary">All events <ArrowRight className="size-4" /></Link>} />
+        <SectionHeader title="Coming up for you" subtitle="From your societies and registrations" action={<Link to="/events" className="link-ink text-sm">All events</Link>} />
         {mine.length ? (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{mine.map((e) => <EventCard key={e.id} event={e} compact />)}</div>
         ) : (
@@ -65,19 +59,20 @@ function Home() {
 
       <div className="grid gap-10 lg:grid-cols-5">
         <section className="lg:col-span-3">
-          <SectionHeader title="Recent announcements" action={<Link to="/communications" className="text-sm font-medium text-primary">Open feed</Link>} />
-          <div className="space-y-3">
+          <SectionHeader title="Recent announcements" action={<Link to="/communications" className="link-ink text-sm">Open feed</Link>} />
+          <div className="flex flex-col gap-3">
             {recent.length === 0 && <EmptyState icon={Megaphone} title="No announcements" body="Announcements from your societies appear here." />}
             {recent.map((a) => {
                const s = getSociety(a.societyId);
                if (!s) return null;
               return (
-                <Link key={a.id} to="/societies/$societyId" params={{ societyId: s.id }} className="card-interactive flex gap-4 rounded-xl border bg-card p-4 shadow-soft">
+                <Link key={a.id} to="/societies/$societyId" params={{ societyId: s.id }} className="card-interactive flex gap-4 rounded-xl border bg-card p-4">
                   <SocietyAvatar society={s} size="sm" />
                   <div className="min-w-0 flex-1">
-                    <p className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span className={cn("font-semibold", accentClasses[s.accent].text)}>{s.shortName}</span>· {a.author} · {timeAgo(a.createdAt)}
-                      {a.pinned && <Pin className="size-3 text-primary" />}
+                    <p className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
+                      <span className={cn("font-semibold", accentClasses[s.accent].text)}>{s.shortName}</span>
+                      <span>{a.author}, {timeAgo(a.createdAt)}</span>
+                      {a.pinned && <span className="flex items-center gap-1 font-medium text-foreground"><Pin className="size-3" />Pinned</span>}
                     </p>
                     <p className="mt-1 font-semibold">{a.title}</p>
                     <p className="mt-0.5 line-clamp-2 text-sm text-muted-foreground">{a.body}</p>
@@ -88,35 +83,27 @@ function Home() {
           </div>
         </section>
         <section className="lg:col-span-2">
-          <SectionHeader title="My societies" action={<Link to="/my-societies" className="text-sm font-medium text-primary">Manage</Link>} />
-          <div className="space-y-2">
-            {joinedSocieties.map((s) => (
-              <Link key={s.id} to="/societies/$societyId" params={{ societyId: s.id }} className="flex items-center gap-3 rounded-xl border bg-card p-3 shadow-soft transition-colors hover:border-primary/30">
+          <SectionHeader title="My societies" action={<Link to="/my-societies" className="link-ink text-sm">Manage</Link>} />
+          <div className="flex flex-col gap-2">
+            {joinedSocieties.length === 0 && <p className="text-sm text-muted-foreground">You haven't joined a society yet. <Link to="/societies" className="link-ink">Find one</Link></p>}
+            {joinedSocieties.map((s) => {
+              const soon = events.filter((e) => e.societyId === s.id && e.date >= todayIso()).length;
+              return (
+              <Link key={s.id} to="/societies/$societyId" params={{ societyId: s.id }} className="card-interactive flex items-center gap-3 rounded-xl border bg-card p-3">
                 <SocietyAvatar society={s} />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold">{s.name}</p>
-                  <p className="text-xs text-muted-foreground">{s.category} · {announcements.filter((a) => a.societyId === s.id).length} posts · {events.filter((e) => e.societyId === s.id && e.date >= todayIso()).length} upcoming</p>
+                  <p className="text-xs text-muted-foreground">{soon ? `${soon} upcoming event${soon === 1 ? "" : "s"}` : "No upcoming events"}</p>
                 </div>
-                <ArrowRight className="size-4 text-muted-foreground" />
               </Link>
-            ))}
-          </div>
-          <div className="mt-6 grid grid-cols-3 gap-2">
-            {[
-              { to: "/societies", icon: Search, l: "Browse" },
-              { to: "/events", icon: CalendarDays, l: "Find event" },
-              { to: "/society-pulse", icon: Sparkles, l: "Pulse" },
-            ].map((q) => (
-              <Link key={q.l} to={q.to} className="flex flex-col items-center gap-2 rounded-xl border bg-card p-3 text-xs font-medium shadow-soft hover:border-primary/30 hover:text-primary">
-                <q.icon className="size-4" />{q.l}
-              </Link>
-            ))}
+              );
+            })}
           </div>
         </section>
       </div>
 
       <section>
-        <SectionHeader title="You might enjoy" subtitle="Based on your interests" />
+        <SectionHeader title="Societies you might like" subtitle="Picked from the interests on your profile" />
         {fits.data?.notice && <p className="mb-3 text-sm text-warning">{fits.data.notice}</p>}
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {recs.map(({ s, reason }) => <SocietyCard key={s.id} society={s} reason={reason} />)}
