@@ -140,7 +140,7 @@ function Pulse() {
               {/* The pair you're looking at */}
               {sa && sb && map.nodes[sa.id] && map.nodes[sb.id] && (
                 <g>
-                  <line x1={map.nodes[sa.id]!.x} y1={map.nodes[sa.id]!.y} x2={map.nodes[sb.id]!.x} y2={map.nodes[sb.id]!.y} stroke="var(--highlight)" strokeWidth={9} strokeLinecap="round" />
+                  <line x1={map.nodes[sa.id]!.x} y1={map.nodes[sa.id]!.y} x2={map.nodes[sb.id]!.x} y2={map.nodes[sb.id]!.y} stroke="var(--primary)" strokeOpacity={0.22} strokeWidth={9} strokeLinecap="round" />
                   <line x1={map.nodes[sa.id]!.x} y1={map.nodes[sa.id]!.y} x2={map.nodes[sb.id]!.x} y2={map.nodes[sb.id]!.y} stroke="var(--ink)" strokeWidth={1.5} />
                 </g>
               )}
@@ -160,7 +160,7 @@ function Pulse() {
                   <g key={s.id} transform={`translate(${n.x},${n.y})`} className={cn("cursor-pointer transition-opacity", lit && !lit.has(s.id) && "opacity-20")}
                     onClick={() => pick(s.id)} onMouseEnter={() => setHover(s.id)} onMouseLeave={() => setHover((h) => (h === s.id ? null : h))}>
                     <title>{s.name}</title>
-                    {sel && <circle r={r + 7} fill="var(--highlight)" />}
+                    {sel && <circle r={r + 7} fill="var(--primary-soft)" stroke="var(--primary)" strokeOpacity={0.35} />}
                     <circle r={r} fill={`var(--soc-${s.accent})`} stroke={sel || hover === s.id ? "var(--ink)" : "#fff"} strokeWidth={sel ? 2.5 : 2} />
                     <Icon x={-(r - 4)} y={-(r - 4)} width={(r - 4) * 2} height={(r - 4) * 2} color="#fff" strokeWidth={2.25} aria-hidden />
                   </g>
@@ -332,8 +332,8 @@ function HubPlate({ hub, on, dim, onClick }: { hub: PulseHub; on: boolean; dim: 
     <g transform={`translate(${hub.x},${hub.y})`} className={cn("cursor-pointer transition-opacity", dim && "opacity-40")} onClick={onClick}>
       <title>{`${hub.label}: ${hub.count} ${hub.count === 1 ? "society" : "societies"}`}</title>
       <rect x={-hub.w / 2} y={-hub.h / 2} width={hub.w} height={hub.h} rx={6}
-        fill={on ? "var(--highlight)" : "#fff"} stroke="var(--ink)" strokeWidth={on ? 1.5 : 1} strokeDasharray={untagged ? "4 3" : undefined} />
-      <text y={5} textAnchor="middle" className="fill-ink text-[14px] font-bold font-wide">
+        fill={on ? "var(--primary-soft)" : "#fff"} stroke={on ? "var(--primary)" : "var(--ink)"} strokeWidth={on ? 1.5 : 1} strokeDasharray={untagged ? "4 3" : undefined} />
+      <text y={5} textAnchor="middle" className="fill-ink font-display text-[14px] font-semibold">
         {hub.label}
         <tspan dx={7} className="fill-muted-foreground font-medium">{hub.count}</tspan>
       </text>

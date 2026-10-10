@@ -42,7 +42,7 @@ function SettingsPage() {
           {allInterests.map((i) => {
             const on = interests.includes(i);
             return (
-              <button key={i} onClick={() => toggleInterest(i)} className={cn("rounded-full border px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-60", on ? "border-ink bg-highlight text-ink" : "bg-card hover:border-ink/40")}>{i}</button>
+              <button key={i} onClick={() => toggleInterest(i)} className={cn("rounded-full border px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-60", on ? "border-primary bg-primary-soft text-primary" : "bg-card hover:border-primary/40")}>{i}</button>
             );
           })}
         </div>

@@ -1,14 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { CalendarPlus, Check, Megaphone, PencilLine, ShieldCheck, X, BookmarkCheck } from "lucide-react";
+import { CalendarPlus, Check, Megaphone, PencilLine, ShieldCheck, UserPlus, Users, X, CalendarDays, BookmarkCheck } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useData } from "@/lib/api/store";
 import { todayIso } from "@/lib/format";
 import { pageHead } from "@/lib/seo";
-import { formatDate, timeAgo } from "@/lib/format";
+import { timeAgo } from "@/lib/format";
 import { PageHeader, EmptyState } from "@/components/cards";
 import { SocietyAvatar } from "@/components/society-avatar";
-import { cn } from "@/lib/utils";
 import { CommitteeRequestsSummary } from "@/components/support-requests";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,19 +55,20 @@ function Committee() {
       <PageHeader title={`${s.shortName} committee`} subtitle={`You're managing ${s.name} as ${s.committee[0]?.position ?? "committee member"}.`}
         actions={<div className="flex gap-2">{picker}<Button variant="outline" asChild><Link to="/societies/$societyId" params={{ societyId: s.id }}>View public page</Link></Button></div>} />
 
-      <dl className="grid grid-cols-2 overflow-hidden rounded-xl border bg-card sm:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { l: "Members", v: s.memberCount },
-          { l: "Waiting to join", v: reqs.length },
-          { l: "Upcoming events", v: upcoming.length },
-          { l: "Announcements", v: anns.length },
-        ].map((x, i) => (
-          <div key={x.l} className={cn("p-4", i > 0 && "sm:border-l", i % 2 === 1 && "border-l", i >= 2 && "border-t sm:border-t-0")}>
-            <dt className="text-xs text-muted-foreground">{x.l}</dt>
-            <dd className="mt-1 font-wide text-2xl font-bold">{x.v}</dd>
+          { l: "Members", v: s.memberCount, icon: Users },
+          { l: "Pending requests", v: reqs.length, icon: UserPlus },
+          { l: "Upcoming events", v: upcoming.length, icon: CalendarDays },
+          { l: "Announcements", v: anns.length, icon: Megaphone },
+        ].map((x) => (
+          <div key={x.l} className="rounded-xl border bg-card p-5 shadow-soft">
+            <x.icon className="size-4 text-primary" />
+            <p className="mt-3 font-display text-3xl font-semibold">{x.v}</p>
+            <p className="text-xs text-muted-foreground">{x.l}</p>
           </div>
         ))}
-      </dl>
+      </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
         {[
@@ -76,8 +76,8 @@ function Committee() {
           { k: "event" as const, l: "Create event", d: "Publish to the events page", icon: CalendarPlus },
           { k: "edit" as const, l: "Edit society profile", d: "Name, tagline and description", icon: PencilLine },
         ].map((q) => (
-          <button key={q.k} onClick={() => setModal(q.k)} className="card-interactive flex items-center gap-4 rounded-xl border bg-card p-4 text-left">
-            <q.icon className="size-5 shrink-0" />
+          <button key={q.k} onClick={() => setModal(q.k)} className="card-interactive flex items-center gap-4 rounded-xl border bg-card p-4 text-left shadow-soft">
+            <span className="flex size-10 items-center justify-center rounded-lg bg-primary-soft text-primary"><q.icon className="size-5" /></span>
             <span><span className="block font-semibold">{q.l}</span><span className="text-xs text-muted-foreground">{q.d}</span></span>
           </button>
         ))}
@@ -89,12 +89,12 @@ function Committee() {
         <section className="rounded-xl border bg-card p-5 shadow-soft">
           <h2 className="font-semibold">Membership requests</h2>
           <div className="mt-4 space-y-3">
-            {reqs.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">Nobody is waiting to join.</p>}
+            {reqs.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">All caught up — no pending requests.</p>}
             {reqs.map((r) => (
               <div key={r.id} className="flex items-start gap-3 rounded-lg border p-3">
                 <span className="flex size-9 items-center justify-center rounded-full bg-muted text-xs font-semibold">{r.name.split(" ").map((p) => p[0]).join("")}</span>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold">{r.name} <span className="font-normal text-muted-foreground">{r.course}</span></p>
+                  <p className="text-sm font-semibold">{r.name} <span className="font-normal text-muted-foreground">· {r.course}</span></p>
                   {r.message && <p className="text-sm text-muted-foreground">“{r.message}”</p>}
                   <p className="text-[11px] text-muted-foreground">{timeAgo(r.requestedAt)}</p>
                 </div>
@@ -126,7 +126,7 @@ function Committee() {
           <div className="mt-4 space-y-2">
             {upcoming.map((e) => (
               <Link key={e.id} to="/events/$eventId" params={{ eventId: e.id }} className="flex items-center justify-between rounded-lg border p-3 hover:border-primary/30">
-                <span><span className="block text-sm font-semibold">{e.title}</span><span className="text-xs text-muted-foreground">{formatDate(e.date)}, {e.start}, {e.venue}</span></span>
+                <span><span className="block text-sm font-semibold">{e.title}</span><span className="text-xs text-muted-foreground">{e.date} · {e.start} · {e.venue}</span></span>
                 <span className="text-xs text-muted-foreground">{d.attendeeCount(e)}{e.capacity ? `/${e.capacity}` : ""}</span>
               </Link>
             ))}
