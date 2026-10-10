@@ -889,46 +889,82 @@ export type Database = {
       societies: {
         Row: {
           accent: string
+          banner_url: string | null
+          campus: string | null
           category: string
+          contact_email: string | null
           created_at: string
           description: string
+          extra_sections: Json
           icon: string
           id: string
+          join_url: string | null
+          links: Json
+          logo_url: string | null
           meets: string
           name: string
+          official_url: string | null
           requires_approval: boolean
           short_name: string
           slug: string
+          source: string | null
+          source_id: string | null
+          source_snapshot: Json | null
+          source_synced_at: string | null
           status: string
           tagline: string
         }
         Insert: {
           accent?: string
+          banner_url?: string | null
+          campus?: string | null
           category?: string
+          contact_email?: string | null
           created_at?: string
           description?: string
+          extra_sections?: Json
           icon?: string
           id?: string
+          join_url?: string | null
+          links?: Json
+          logo_url?: string | null
           meets?: string
           name: string
+          official_url?: string | null
           requires_approval?: boolean
           short_name: string
           slug: string
+          source?: string | null
+          source_id?: string | null
+          source_snapshot?: Json | null
+          source_synced_at?: string | null
           status?: string
           tagline?: string
         }
         Update: {
           accent?: string
+          banner_url?: string | null
+          campus?: string | null
           category?: string
+          contact_email?: string | null
           created_at?: string
           description?: string
+          extra_sections?: Json
           icon?: string
           id?: string
+          join_url?: string | null
+          links?: Json
+          logo_url?: string | null
           meets?: string
           name?: string
+          official_url?: string | null
           requires_approval?: boolean
           short_name?: string
           slug?: string
+          source?: string | null
+          source_id?: string | null
+          source_snapshot?: Json | null
+          source_synced_at?: string | null
           status?: string
           tagline?: string
         }

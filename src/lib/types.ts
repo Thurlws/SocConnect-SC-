@@ -28,6 +28,15 @@ export interface CommitteeMember {
   position: string;
 }
 
+export type SocietyLinkKind =
+  | "website" | "instagram" | "tiktok" | "facebook" | "linkedin" | "x" | "youtube" | "discord" | "linktree" | "whatsapp" | "other";
+
+export interface SocietyLink {
+  kind: SocietyLinkKind;
+  url: string;
+  label: string | null;
+}
+
 export interface Society {
   id: string;
   name: string;
@@ -42,6 +51,17 @@ export interface Society {
   committee: CommitteeMember[];
   requiresApproval: boolean;
   meets: string;
+  /** Official details imported from societies.tudublin.ie; absent for societies created in the app. */
+  campus?: string | undefined;
+  logoUrl?: string | undefined;
+  bannerUrl?: string | undefined;
+  /** MyStudentLife page where official membership is taken. */
+  joinUrl?: string | undefined;
+  /** The society's profile on societies.tudublin.ie. */
+  officialUrl?: string | undefined;
+  contactEmail?: string | undefined;
+  links?: SocietyLink[] | undefined;
+  extraSections?: { title: string; body: string }[] | undefined;
 }
 
 export type MembershipStatus = "member" | "pending" | "none";

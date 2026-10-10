@@ -2,7 +2,8 @@ import {
   Bot, Camera, Clapperboard, Code2, Cog, Dices, Gamepad2, Globe2, HeartHandshake, Leaf, Mic2, Mountain, Music, Palette, Rocket, Sparkles, Users,
   type LucideIcon,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useState } from "react";
+import { cn, safeHref } from "@/lib/utils";
 import type { Society, SocietyAccent } from "@/lib/types";
 
 const icons: Record<string, LucideIcon> = {
@@ -26,9 +27,18 @@ export function societyIcon(name: string): LucideIcon {
 
 const sizes = { xs: "size-6 rounded-md [&_svg]:size-3.5", sm: "size-8 rounded-lg [&_svg]:size-4", md: "size-10 rounded-xl [&_svg]:size-5", lg: "size-16 rounded-2xl [&_svg]:size-8" };
 
-export function SocietyAvatar({ society, size = "md", className }: { society: Pick<Society, "icon" | "accent" | "name">; size?: keyof typeof sizes; className?: string }) {
+export function SocietyAvatar({ society, size = "md", className }: { society: Pick<Society, "icon" | "accent" | "name" | "logoUrl">; size?: keyof typeof sizes; className?: string }) {
+  const [logoFailed, setLogoFailed] = useState(false);
   const Icon = societyIcon(society.icon);
   const a = accentClasses[society.accent];
+  const logo = safeHref(society.logoUrl);
+  if (logo && !logoFailed) {
+    // Official logos are hosted on societies.tudublin.ie; fall back to the icon if one fails to load.
+    return (
+      <img src={logo} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setLogoFailed(true)}
+        className={cn("shrink-0 bg-card object-cover", sizes[size], className)} />
+    );
+  }
   return (
     <span aria-hidden className={cn("inline-flex shrink-0 items-center justify-center", sizes[size], a.soft, a.text, className)}>
       <Icon strokeWidth={2} />

@@ -14,7 +14,8 @@ import { MeetingCard, RecapCard, RoomCard, ScheduleCallDialog } from "@/componen
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { cn, safeHref } from "@/lib/utils";
+import { OfficialInfo } from "@/components/official-info";
 
 export const Route = createFileRoute("/_authenticated/societies/$societyId")({
   head: () => pageHead("Society", "A student society on SocConnect."),
@@ -45,6 +46,7 @@ function SocietyPage({ societyId }: { societyId: string }) {
   const today = todayIso();
   const isMember = membership(s.id) === "member";
   const a = accentClasses[s.accent];
+  const banner = safeHref(s.bannerUrl);
   const socAnn = announcements.filter((x) => x.societyId === s.id);
   const socEvents = events.filter((e) => e.societyId === s.id && e.date >= today);
   const socChannels = channels.filter((c) => c.societyId === s.id);
@@ -64,14 +66,16 @@ function SocietyPage({ societyId }: { societyId: string }) {
       <Link to="/societies" className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="size-4" />All societies</Link>
       <div className="overflow-hidden rounded-2xl border bg-card shadow-soft">
         <div className={cn("h-28 sm:h-36", a.soft)}>
-          <div className={cn("h-full w-full opacity-30 [background-image:radial-gradient(currentColor_1px,transparent_1px)] [background-size:16px_16px]", a.text)} />
+          {banner
+            ? <img src={banner} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover" />
+            : <div className={cn("h-full w-full opacity-30 [background-image:radial-gradient(currentColor_1px,transparent_1px)] [background-size:16px_16px]", a.text)} />}
         </div>
         <div className="flex flex-col gap-4 px-6 pb-6 sm:flex-row sm:items-end sm:justify-between">
           <div className="-mt-10 flex items-end gap-4">
             <SocietyAvatar society={s} size="lg" className="border-4 border-card bg-card" />
             <div className="pb-1">
               <h1 className="text-2xl font-semibold">{s.name}</h1>
-              <p className="text-sm text-muted-foreground">{s.category} · {s.memberCount} members · {s.meets}</p>
+              <p className="text-sm text-muted-foreground">{[s.category, s.campus && `${s.campus} campus`, `${s.memberCount} members`, s.meets].filter(Boolean).join(" · ")}</p>
             </div>
           </div>
           <JoinButton society={s} size="default" />
@@ -89,14 +93,21 @@ function SocietyPage({ societyId }: { societyId: string }) {
           <div className="space-y-4 lg:col-span-2">
             <div className="rounded-xl border bg-card p-6 shadow-soft">
               <p className={cn("text-sm font-semibold", a.text)}>{s.tagline}</p>
-              <p className="mt-3 leading-relaxed text-muted-foreground">{s.description}</p>
+              <p className="mt-3 whitespace-pre-line leading-relaxed text-muted-foreground">{s.description || "This society hasn't published a description yet."}</p>
               <div className="mt-4 flex flex-wrap gap-1.5">{s.tags.map((t) => <span key={t} className="rounded-full bg-muted px-2.5 py-0.5 text-xs">{t}</span>)}</div>
             </div>
+            {(s.extraSections ?? []).map((x) => (
+              <div key={x.title} className="rounded-xl border bg-card p-6 shadow-soft">
+                <p className="text-sm font-semibold">{x.title}</p>
+                <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">{x.body}</p>
+              </div>
+            ))}
             {socEvents[0] && <div><p className="mb-3 text-sm font-semibold">Next up</p><div className="max-w-sm"><EventCard event={socEvents[0]} /></div></div>}
           </div>
           <div className="space-y-4">
             <div className="rounded-xl border bg-card p-5 shadow-soft">
               <p className="text-sm font-semibold">Committee</p>
+              {s.committee.length === 0 && <p className="mt-2 text-xs text-muted-foreground">No committee members on SocConnect yet.</p>}
               <ul className="mt-3 space-y-3">
                 {s.committee.map((c) => (
                   <li key={c.name} className="flex items-center gap-3">
@@ -112,6 +123,7 @@ function SocietyPage({ societyId }: { societyId: string }) {
                 />
               )}
             </div>
+            <OfficialInfo society={s} />
             <div className="rounded-xl border bg-card p-5 text-sm shadow-soft">
               <p className="font-semibold">Joining</p>
               <p className="mt-1 text-muted-foreground">{s.requiresApproval ? "Membership requests are reviewed by the committee." : "Open to all students — join instantly."}</p>

@@ -2,7 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type {
   CallRecap, CallRoom, CallSummary, TranscriptLine,
   Announcement, CollaborationProposal, DiscussionChannel, DiscussionMessage, Event, MembershipRequest,
-  Notification, ResolvedRequest, Resource, Society, SocietyAccent, SupportRequest,
+  Notification, ResolvedRequest, Resource, Society, SocietyAccent, SocietyLink, SupportRequest,
 } from "@/lib/types";
 import type { NotificationPrefs } from "@/lib/validation";
 import { toDublin } from "@/lib/format";
@@ -88,6 +88,11 @@ export async function loadAppData(uid: string, committeeSocietyIds: string[]): P
     id: s.slug, name: s.name, shortName: s.short_name, category: s.category, tagline: s.tagline, description: s.description,
     icon: s.icon, accent: s.accent as SocietyAccent, memberCount: memberCount.get(s.id) ?? 0, tags: tagMap.get(s.id) ?? [],
     committee: committee.get(s.id) ?? [], requiresApproval: s.requires_approval, meets: s.meets,
+    // Official TU Dublin fields; `??` keeps this working before the 0006 migration adds the columns.
+    campus: s.campus ?? undefined, logoUrl: s.logo_url ?? undefined, bannerUrl: s.banner_url ?? undefined,
+    joinUrl: s.join_url ?? undefined, officialUrl: s.official_url ?? undefined, contactEmail: s.contact_email ?? undefined,
+    links: Array.isArray(s.links) ? (s.links as unknown as SocietyLink[]) : [],
+    extraSections: Array.isArray(s.extra_sections) ? (s.extra_sections as unknown as { title: string; body: string }[]) : [],
   }));
 
   const attendees = new Map(must(att).map((a) => [a.event_id, a.attendees]));

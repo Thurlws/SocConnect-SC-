@@ -51,9 +51,9 @@ export const messageInput = z
   .max(1000, "Messages can be up to 1,000 characters.");
 
 export const societyEditInput = z.object({
-  tagline: z.string().trim().min(3, "Add a tagline.").max(80),
-  description: z.string().trim().min(10, "Add a description of at least 10 characters.").max(800),
-  meets: z.string().trim().min(2, "Say when and where you meet.").max(80),
+  tagline: z.string().trim().min(3, "Add a tagline.").max(140),
+  description: z.string().trim().min(10, "Add a description of at least 10 characters.").max(2000),
+  meets: z.string().trim().min(2, "Say when and where you meet.").max(140),
 });
 
 export const eventInput = (today: string) =>

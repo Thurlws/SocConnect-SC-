@@ -24,19 +24,22 @@ function Discover() {
   const [tags, setTags] = useState<string[]>([]);
   const [sort, setSort] = useState("recommended");
   const [status, setStatus] = useState("all");
-  const cats = ["All", ...Array.from(new Set(societies.map((s) => s.category)))];
+  const [campus, setCampus] = useState("all");
+  const cats = ["All", ...Array.from(new Set(societies.map((s) => s.category))).sort()];
+  const campuses = Array.from(new Set(societies.flatMap((s) => (s.campus ? [s.campus] : [])))).sort();
 
   const list = useMemo(() => {
     const ql = q.toLowerCase();
     return societies
-      .filter((s) => !ql || `${s.name} ${s.tagline} ${s.tags.join(" ")}`.toLowerCase().includes(ql))
+      .filter((s) => !ql || `${s.name} ${s.tagline} ${s.category} ${s.campus ?? ""} ${s.tags.join(" ")}`.toLowerCase().includes(ql))
       .filter((s) => cat === "All" || s.category === cat)
+      .filter((s) => campus === "all" || s.campus === campus)
       .filter((s) => tags.every((t) => s.tags.includes(t)))
       .filter((s) => status === "all" || (status === "joined" ? membership(s.id) === "member" : membership(s.id) === "none"))
       .sort((a, b) => sort === "recommended" ? (recommendations.findIndex(r => r.slug === a.id) < 0 ? 99999 : recommendations.findIndex(r => r.slug === a.id)) - (recommendations.findIndex(r => r.slug === b.id) < 0 ? 99999 : recommendations.findIndex(r => r.slug === b.id)) : (sort === "az" ? a.name.localeCompare(b.name) : b.memberCount - a.memberCount));
-  }, [societies, q, cat, tags, sort, status, membership, recommendations]);
+  }, [societies, q, cat, campus, tags, sort, status, membership, recommendations]);
 
-  const clear = () => { setQ(""); setCat("All"); setTags([]); setStatus("all"); };
+  const clear = () => { setQ(""); setCat("All"); setCampus("all"); setTags([]); setStatus("all"); };
 
   return (
     <div>
@@ -47,6 +50,15 @@ function Discover() {
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by name, activity or interest" className="pl-9" />
           </div>
+          {campuses.length > 0 && (
+            <Select value={campus} onValueChange={setCampus}>
+              <SelectTrigger className="md:w-44" aria-label="Campus"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All campuses</SelectItem>
+                {campuses.map((c) => <SelectItem key={c} value={c}>{c} campus</SelectItem>)}
+              </SelectContent>
+            </Select>
+          )}
           <Select value={status} onValueChange={setStatus}>
             <SelectTrigger className="md:w-40"><SelectValue /></SelectTrigger>
             <SelectContent>

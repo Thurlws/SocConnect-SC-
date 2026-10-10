@@ -65,7 +65,7 @@ export function SocietyCard({ society, reason, action }: { society: Society; rea
       <Link to="/societies/$societyId" params={{ societyId: society.id }} className="mt-4 after:absolute after:inset-0">
         <h3 className="font-display text-base font-semibold hover:text-primary">{society.name}</h3>
       </Link>
-      <p className="mt-0.5 text-xs text-muted-foreground">{society.category} · {society.memberCount} members</p>
+      <p className="mt-0.5 text-xs text-muted-foreground">{[society.category, society.campus, `${society.memberCount} members`].filter(Boolean).join(" · ")}</p>
       <p className="mt-3 line-clamp-2 text-sm text-muted-foreground">{society.tagline}</p>
       {reason && <p className="mt-3 rounded-lg bg-teal-soft px-3 py-2 text-xs text-foreground">{reason}</p>}
       <div className="mt-4 flex flex-wrap gap-1.5">

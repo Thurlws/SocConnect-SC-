@@ -232,9 +232,9 @@ function EditDialog({ open, onClose, societyId }: { open: boolean; onClose: () =
       <DialogContent>
         <DialogHeader><DialogTitle className="flex items-center gap-2"><SocietyAvatar society={s} size="sm" />Edit {s.shortName}</DialogTitle></DialogHeader>
         <form className="space-y-3" onSubmit={async (e) => { e.preventDefault(); const o = await editSociety(societyId, f); if (!o.ok) { toast.error(o.error); return; } toast.success("Society profile updated"); onClose(); }}>
-          <div className="space-y-1.5"><Label>Tagline</Label><Input value={f.tagline} onChange={(e) => setF({ ...f, tagline: e.target.value })} maxLength={80} /></div>
-          <div className="space-y-1.5"><Label>Description</Label><Textarea rows={5} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} maxLength={800} /></div>
-          <div className="space-y-1.5"><Label>When & where you meet</Label><Input value={f.meets} onChange={(e) => setF({ ...f, meets: e.target.value })} maxLength={80} /></div>
+          <div className="space-y-1.5"><Label>Tagline</Label><Input value={f.tagline} onChange={(e) => setF({ ...f, tagline: e.target.value })} maxLength={140} /></div>
+          <div className="space-y-1.5"><Label>Description</Label><Textarea rows={8} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} maxLength={2000} /></div>
+          <div className="space-y-1.5"><Label>When & where you meet</Label><Input value={f.meets} onChange={(e) => setF({ ...f, meets: e.target.value })} maxLength={140} /></div>
           <DialogFooter><Button type="button" variant="ghost" onClick={onClose}>Cancel</Button><Button type="submit">Save changes</Button></DialogFooter>
         </form>
       </DialogContent>

@@ -25,3 +25,4 @@
 - `.env` (public backend URL/key only) is committed; real secrets live in Cloud secrets — published builds read `.env` from the repo and break without it.
 - Society AI lives in authenticated `society-ai.functions.ts`, using RLS-scoped real records, database-locked quotas and durable availability state; recommendations use the ranking RPC and daily per-user context-aware cache to bound cost and prevent invented plans.
 - The shared profile form uses native select/datalist choices backed by the official TU Dublin undergraduate catalogue, so onboarding and profile editing stay consistent.
+- Official society data (`source = 'tudublin'` rows: logo, banner, campus, links, join/official URLs, extra sections) is imported from societies.tudublin.ie by generated migrations matched on `(source, source_id)`; refreshes never overwrite committee-edited tagline/description/meets, and `guard_society_update` keeps join/official URLs and source fields admin/import-only.

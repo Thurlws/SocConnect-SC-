@@ -112,6 +112,16 @@ Business rules are pure functions in `src/lib/demo-rules.ts`, tested in `src/tes
 
 To move to a real backend, re-implement the `demo-rules.ts` checks on the server and in database policies (for example Supabase row-level security). They shouldn't stay client-side only.
 
+## Official TU Dublin society data
+
+The society directory is populated from the public [TU Dublin Societies site](https://societies.tudublin.ie/societies/). A Scrapy crawler (kept outside this repo, in `student-society-spot-extractor/tud_scrapy`) collects every society's profile, and `build_socconnect_seed.py` turns the result into a migration (`drizzle/migrations/0006_official_tud_societies.sql`) that:
+
+- adds official-data columns to `societies`: `campus`, `logo_url`, `banner_url`, `join_url` (MyStudentLife), `official_url`, `contact_email`, `links`, `extra_sections` and `source` / `source_id` / `source_synced_at` / `source_snapshot`;
+- upserts the 67 societies, matched on `(source, source_id)`, and adds interest tags for recommendations;
+- can be re-generated and re-applied to refresh the data. Committee edits to the tagline, description and meeting time are kept, and societies that disappear from the source are never deleted automatically.
+
+Society pages show the official logo, banner, campus, contact email, social links and a "Join on MyStudentLife" button. Student-number email addresses, phone numbers and committee names from the source site are not imported.
+
 ## Live video calls (LiveKit)
 
 Society calls are real multi-person video calls when LiveKit is configured. Without it they fall back to a demo with simulated participants, so nothing breaks.
