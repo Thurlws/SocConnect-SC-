@@ -54,41 +54,41 @@ function EventPage() {
       <div className="grid gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <div className={cn("rounded-2xl p-8", accentClasses[s.accent].soft)}>
-            <Link to="/societies/$societyId" params={{ societyId: s.id }} className="inline-flex items-center gap-2 rounded-full bg-card py-1 pl-1 pr-3 text-sm font-medium">
+            <Link to="/societies/$societyId" params={{ societyId: s.id }} className="inline-flex items-center gap-2 rounded-full bg-card py-1 pl-1 pr-3 text-sm font-medium shadow-soft">
               <SocietyAvatar society={s} size="xs" />{s.name}
             </Link>
-            <h1 className="mt-5 text-3xl font-bold sm:text-4xl">{e.title}</h1>
-            <p className="mt-2 text-sm text-muted-foreground">{e.category}, {until === 0 ? "today" : until > 0 ? `in ${until} day${until === 1 ? "" : "s"}` : "already happened"}</p>
+            <h1 className="mt-5 text-3xl font-semibold sm:text-4xl">{e.title}</h1>
+            <p className="mt-2 text-sm text-muted-foreground">{e.category} · {until === 0 ? "Today" : until > 0 ? `In ${until} day${until === 1 ? "" : "s"}` : "Past event"}</p>
           </div>
-          <div className="mt-6 rounded-xl border bg-card p-6">
+          <div className="mt-6 rounded-xl border bg-card p-6 shadow-soft">
             <h2 className="font-semibold">About this event</h2>
             <p className="mt-2 leading-relaxed text-muted-foreground">{e.description}</p>
             <div className="mt-4 flex flex-wrap gap-1.5">{e.tags.map((t) => <span key={t} className="flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-xs"><Tag className="size-3" />{t}</span>)}</div>
           </div>
         </div>
         <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
-          <div className="rounded-xl border bg-card p-6">
-            <ul className="flex flex-col gap-3 text-sm">
+          <div className="rounded-xl border bg-card p-6 shadow-soft">
+            <ul className="space-y-3 text-sm">
               <li className="flex gap-3"><Clock className="size-4 text-primary" /><span><span className="block font-medium">{formatDate(e.date, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</span><span className="text-muted-foreground">{e.start}{e.end ? ` – ${e.end}` : ""}</span></span></li>
               <li className="flex gap-3"><MapPin className="size-4 text-primary" /><span className="font-medium">{e.venue}</span></li>
-              <li className="flex gap-3"><Users className="size-4 text-primary" /><span className="font-medium">{count} going{e.capacity ? `, ${Math.max(e.capacity - count, 0)} spots left` : ""}</span></li>
+              <li className="flex gap-3"><Users className="size-4 text-primary" /><span className="font-medium">{count} going{e.capacity ? ` · ${Math.max(e.capacity - count, 0)} spots left` : ""}</span></li>
             </ul>
             {e.capacity && <Progress value={Math.min((count / e.capacity) * 100, 100)} className="mt-4 h-1.5" />}
             <Button className="mt-5 w-full" size="lg" variant={reg ? "outline" : "default"} onClick={toggle} disabled={busy || availability === "past" || (!reg && availability === "full")}>
-              {availability === "past" ? (reg ? "Ended. You were registered" : "This event has ended")
-                : reg ? "Cancel registration" : availability === "full" ? "Event full" : "Register"}
+              {availability === "past" ? (reg ? "Event ended · you were registered" : "This event has ended")
+                : reg ? <><Check />Registered — cancel</> : availability === "full" ? "Event full" : "Register"}
             </Button>
-            {reg && availability !== "past" && <p className="mt-2 flex items-center justify-center gap-1.5 text-sm font-medium"><Check className="size-4" />You're registered</p>}
-            {availability === "full" && !reg && <p className="mt-2 text-center text-xs text-muted-foreground">No spots left, and there's no waitlist.</p>}
+            {availability === "full" && <p className="mt-2 text-center text-xs text-muted-foreground">No spots left. There's no waitlist in this prototype.</p>}
             {reg && availability !== "past" && (
               <Button variant="ghost" className="mt-2 w-full" onClick={() => downloadIcs(e, s.name)}><CalendarPlus />Add to calendar (.ics)</Button>
             )}
+            <p className="mt-3 text-center text-[11px] text-muted-foreground">Demo registration — stored on this device only.</p>
           </div>
         </aside>
       </div>
       {related.length > 0 && (
         <section className="mt-12">
-          <h2 className="mb-4 text-xl font-bold">You might also like</h2>
+          <h2 className="mb-4 text-lg font-semibold">You might also like</h2>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{related.map((x) => <EventCard key={x.id} event={x} compact />)}</div>
         </section>
       )}

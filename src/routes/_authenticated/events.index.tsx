@@ -36,7 +36,7 @@ function EventsPage() {
 
   return (
     <div className="space-y-8">
-      <PageHeader title="Events" subtitle="Workshops, socials, talks and trips from societies across campus." actions={
+      <PageHeader title="Events" subtitle="What's happening across campus. Dates follow the fixed demo schedule." actions={
         <div className="flex rounded-lg border bg-card p-0.5">
           <Button size="sm" variant={view === "grid" ? "secondary" : "ghost"} onClick={() => setView("grid")}><LayoutGrid />Grid</Button>
           <Button size="sm" variant={view === "calendar" ? "secondary" : "ghost"} onClick={() => setView("calendar")}><CalendarDays />Calendar</Button>
@@ -47,14 +47,14 @@ function EventsPage() {
         <Link to="/events/$eventId" params={{ eventId: featured.id }} className="card-interactive group grid overflow-hidden rounded-2xl border bg-card shadow-soft md:grid-cols-5">
           <div className={cn("relative flex items-center justify-center p-10 md:col-span-2", accentClasses[fs.accent].soft)}>
             <SocietyAvatar society={fs} size="lg" className="bg-card shadow-soft" />
-            <span className="absolute left-4 top-4 rounded-md bg-card px-2 py-0.5 text-xs font-semibold">Featured</span>
+            <span className="absolute left-4 top-4 rounded-full bg-card px-2.5 py-1 text-[11px] font-semibold text-primary shadow-soft">Featured</span>
           </div>
           <div className="p-6 md:col-span-3 md:p-8">
             <p className={cn("text-sm font-semibold", accentClasses[fs.accent].text)}>{fs.name}</p>
-            <h2 className="mt-1 text-2xl font-bold decoration-highlight decoration-[3px] underline-offset-4 group-hover:underline">{featured.title}</h2>
+            <h2 className="mt-1 text-2xl font-semibold group-hover:text-primary">{featured.title}</h2>
             <p className="mt-2 text-muted-foreground">{featured.description}</p>
             <div className="mt-4 flex flex-wrap gap-4 text-sm text-muted-foreground">
-              <span className="flex items-center gap-1.5"><Clock className="size-4" />{formatDate(featured.date, { weekday: "long", day: "numeric", month: "long" })}, {featured.start}</span>
+              <span className="flex items-center gap-1.5"><Clock className="size-4" />{formatDate(featured.date, { weekday: "long", day: "numeric", month: "long" })} · {featured.start}</span>
               <span className="flex items-center gap-1.5"><MapPin className="size-4" />{featured.venue}</span>
             </div>
           </div>
@@ -68,13 +68,13 @@ function EventsPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           {(["all", "mine", "registered"] as const).map((s) => (
-            <button key={s} onClick={() => setScope(s)} className={cn("rounded-full border px-3 py-1 text-xs font-medium", scope === s ? "border-ink bg-highlight text-ink" : "bg-card hover:border-ink/40")}>
+            <button key={s} onClick={() => setScope(s)} className={cn("rounded-full border px-3 py-1 text-xs font-medium", scope === s ? "border-ink bg-ink text-ink-foreground" : "bg-card")}>
               {s === "all" ? "All" : s === "mine" ? "My societies" : "Registered"}
             </button>
           ))}
           <span className="mx-1 w-px bg-border" />
           {cats.map((c) => (
-            <button key={c} onClick={() => setCat(c)} className={cn("rounded-full border px-3 py-1 text-xs font-medium", cat === c ? "border-ink bg-highlight text-ink" : "bg-card hover:border-ink/40")}>{c}</button>
+            <button key={c} onClick={() => setCat(c)} className={cn("rounded-full border px-3 py-1 text-xs font-medium", cat === c ? "border-primary bg-primary text-primary-foreground" : "bg-card")}>{c}</button>
           ))}
         </div>
       </div>

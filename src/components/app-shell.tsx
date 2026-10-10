@@ -8,7 +8,6 @@ import { useData } from "@/lib/api/store";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { SocietyAvatar } from "@/components/society-avatar";
-import { Wordmark } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -37,8 +36,11 @@ const titles: Record<string, string> = Object.fromEntries(nav.map((n) => [n.to, 
 
 function Logo({ collapsed }: { collapsed?: boolean }) {
   return (
-    <Link to="/" aria-label="SocConnect home">
-      <Wordmark collapsed={collapsed} />
+    <Link to="/" className="flex items-center gap-2.5">
+      <span className="flex size-8 items-center justify-center rounded-lg bg-brand text-primary-foreground shadow-soft">
+        <Waypoints className="size-4" />
+      </span>
+      {!collapsed && <span className="font-display text-lg font-semibold tracking-tight">SocConnect</span>}
     </Link>
   );
 }
@@ -52,34 +54,34 @@ function SidebarBody({ collapsed, onNavigate }: { collapsed: boolean; onNavigate
       <div className={cn("flex h-16 items-center px-4", collapsed && "justify-center px-0")}>
         <Logo collapsed={collapsed} />
       </div>
-      <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-3 py-2">
+      <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-2">
         {nav.filter((n) => !n.committeeOnly || role === "committee").map((n) => (
           <Link
             key={n.to}
             to={n.to}
             onClick={onNavigate}
             title={collapsed ? n.label : undefined}
-            aria-current={isActive(n.to) ? "page" : undefined}
             className={cn(
-              "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent",
-              isActive(n.to) && "marker font-semibold text-ink hover:bg-transparent",
+              "relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent",
+              isActive(n.to) && "bg-sidebar-accent text-primary",
               collapsed && "justify-center px-0",
             )}
           >
+            {isActive(n.to) && <span className="absolute inset-y-1.5 left-0 w-0.5 rounded-full bg-primary" />}
             <n.icon className="size-4 shrink-0" />
             {!collapsed && n.label}
           </Link>
         ))}
         {!collapsed && (
           <div className="pt-6">
-            <p className="px-3 pb-2 text-xs font-semibold text-muted-foreground">Your societies</p>
+            <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">My communities</p>
             {joinedSocieties.slice(0, 5).map((s) => (
               <Link
                 key={s.id}
                 to="/societies/$societyId"
                 params={{ societyId: s.id }}
                 onClick={onNavigate}
-                className={cn("flex items-center gap-2.5 rounded-md px-3 py-1.5 text-sm text-sidebar-foreground hover:bg-sidebar-accent", pathname === `/societies/${s.id}` && "marker font-semibold text-ink hover:bg-transparent")}
+                className={cn("flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-sm text-sidebar-foreground hover:bg-sidebar-accent", pathname === `/societies/${s.id}` && "bg-sidebar-accent")}
               >
                 <SocietyAvatar society={s} size="xs" />
                 <span className="truncate">{s.name}</span>
@@ -94,7 +96,7 @@ function SidebarBody({ collapsed, onNavigate }: { collapsed: boolean; onNavigate
         {!collapsed && (
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold">{user.name}</p>
-            <p className="truncate text-xs text-muted-foreground">{committeeSeats[0] ? `${committeeSeats[0].position}, ${committeeSeats[0].short_name}` : "Student"}</p>
+            <p className="truncate text-xs text-muted-foreground">{committeeSeats[0] ? `${committeeSeats[0].position} · ${committeeSeats[0].short_name}` : "Student"}</p>
           </div>
         )}
       </div>
@@ -117,11 +119,11 @@ function GlobalSearch() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="flex h-9 w-full max-w-sm items-center gap-2 rounded-md border bg-card px-3 text-sm text-muted-foreground transition-colors hover:border-ink/40"
+        className="flex h-9 w-full max-w-sm items-center gap-2 rounded-lg border bg-card px-3 text-sm text-muted-foreground shadow-soft transition-colors hover:border-primary/30"
       >
-        <Search className="size-4 shrink-0" />
-        <span className="flex-1 truncate text-left">Search societies & events</span>
-        <kbd className="hidden rounded border bg-muted px-1.5 text-[11px] sm:inline">⌘K</kbd>
+        <Search className="size-4" />
+        <span className="flex-1 text-left">Search societies & events</span>
+        <kbd className="hidden rounded border bg-muted px-1.5 text-[10px] sm:inline">⌘K</kbd>
       </button>
       <CommandDialog open={open} onOpenChange={setOpen}>
         <CommandInput placeholder="Search societies, events, tags…" />
@@ -165,7 +167,7 @@ function Notifications() {
       <PopoverContent align="end" className="w-80 p-0">
         <div className="flex items-center justify-between border-b px-4 py-3">
           <p className="text-sm font-semibold">Notifications</p>
-          <button onClick={markAllRead} className="link-ink text-xs">Mark all read</button>
+          <button onClick={markAllRead} className="text-xs font-medium text-primary hover:underline">Mark all read</button>
         </div>
         <div className="max-h-96 overflow-y-auto">
           {notifications.length === 0 && <p className="p-6 text-center text-sm text-muted-foreground">You're all caught up.</p>}
@@ -178,7 +180,7 @@ function Notifications() {
               }}
               className={cn("flex w-full gap-3 border-b px-4 py-3 text-left last:border-0 hover:bg-muted", !n.read && "bg-primary-soft/50")}
             >
-              <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", n.read ? "bg-transparent" : "bg-ink")} />
+              <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", n.read ? "bg-transparent" : "bg-primary")} />
               <span className="min-w-0">
                 <span className="block text-sm font-medium">{n.title}</span>
                 <span className="block truncate text-xs text-muted-foreground">{n.body}</span>
@@ -199,7 +201,7 @@ function UserMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="flex size-9 items-center justify-center rounded-full bg-ink text-xs font-semibold text-ink-foreground ring-highlight ring-offset-2 ring-offset-background transition hover:ring-2" aria-label="Account menu">
+        <button className="flex size-9 items-center justify-center rounded-full bg-ink text-xs font-semibold text-ink-foreground ring-offset-2 transition hover:ring-2 hover:ring-primary/40" aria-label="Account menu">
           {user.initials}
         </button>
       </DropdownMenuTrigger>
@@ -231,7 +233,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <button
           onClick={() => setCollapsed((c) => !c)}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          className="absolute -right-3 top-5 flex size-6 items-center justify-center rounded-full border bg-card text-muted-foreground hover:text-foreground"
+          className="absolute -right-3 top-20 flex size-6 items-center justify-center rounded-full border bg-card text-muted-foreground shadow-soft hover:text-foreground"
         >
           <ChevronsLeft className={cn("size-3.5 transition-transform", collapsed && "rotate-180")} />
         </button>
@@ -243,24 +245,24 @@ export function AppShell({ children }: { children: ReactNode }) {
         </SheetContent>
       </Sheet>
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b bg-background px-4 sm:px-6">
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b bg-background/85 px-4 backdrop-blur sm:px-6">
           <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setMobileOpen(true)} aria-label="Open navigation">
             <Menu className="size-5" />
           </Button>
           <p className="hidden w-44 truncate text-sm font-semibold md:block">{title}</p>
           <div className="flex flex-1 justify-center"><GlobalSearch /></div>
-          {role === "committee" && <span className="hidden rounded-md border border-ink/25 px-2 py-0.5 text-xs font-medium sm:inline">Committee view</span>}
+          {role === "committee" && <span className="hidden rounded-full bg-teal-soft px-2.5 py-1 text-[11px] font-semibold text-teal sm:inline">Committee view</span>}
           <Notifications />
           <UserMenu />
         </header>
         <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 pb-24 sm:px-6 lg:px-10 lg:pb-10">{children}</main>
       </div>
-      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t bg-card lg:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t bg-card/95 backdrop-blur lg:hidden">
         {nav.filter((n) => ["/", "/societies", "/events", "/communications", "/society-pulse"].includes(n.to)).map((n) => {
           const active = n.to === "/" ? pathname === "/" : pathname.startsWith(n.to);
           return (
-            <Link key={n.to} to={n.to} aria-current={active ? "page" : undefined} className={cn("flex flex-col items-center gap-1 py-2 text-[11px] font-medium text-muted-foreground", active && "font-semibold text-ink")}>
-              <span className={cn("rounded-full px-4 py-1", active && "bg-highlight")}><n.icon className="size-5" /></span>
+            <Link key={n.to} to={n.to} className={cn("flex flex-col items-center gap-1 py-2.5 text-[10px] font-medium text-muted-foreground", active && "text-primary")}>
+              <n.icon className="size-5" />
               {n.label.split(" ").pop()}
             </Link>
           );
