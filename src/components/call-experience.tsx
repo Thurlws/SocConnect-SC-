@@ -280,7 +280,7 @@ export function CallExperience({
         <div className="rounded-2xl border bg-card p-8 text-center shadow-soft">
           <SocietyAvatar society={society} size="lg" className="mx-auto" />
           <h1 className="mt-4 font-display text-2xl font-semibold">{room.name}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{society.name} · {room.description}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{society.name}: {room.description}</p>
           {guest ? (
             <div className="mt-6 space-y-1.5 text-left">
               <Label htmlFor="call-name">Join as</Label>
@@ -320,7 +320,7 @@ export function CallExperience({
           <SocietyAvatar society={society} size="sm" />
           <div>
             <p className="text-sm font-semibold">{room.name}</p>
-            <p className="text-xs opacity-70">{society.shortName} · {clock(elapsed)}</p>
+            <p className="text-xs opacity-70">{society.shortName}, {clock(elapsed)}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">

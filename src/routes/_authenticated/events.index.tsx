@@ -36,7 +36,7 @@ function EventsPage() {
 
   return (
     <div className="space-y-8">
-      <PageHeader title="Events" subtitle="What's happening across campus. Dates follow the fixed demo schedule." actions={
+      <PageHeader title="Events" subtitle="Workshops, socials, talks and trips from societies across campus." actions={
         <div className="flex rounded-lg border bg-card p-0.5">
           <Button size="sm" variant={view === "grid" ? "secondary" : "ghost"} onClick={() => setView("grid")}><LayoutGrid />Grid</Button>
           <Button size="sm" variant={view === "calendar" ? "secondary" : "ghost"} onClick={() => setView("calendar")}><CalendarDays />Calendar</Button>
@@ -54,7 +54,7 @@ function EventsPage() {
             <h2 className="mt-1 text-2xl font-semibold group-hover:text-primary">{featured.title}</h2>
             <p className="mt-2 text-muted-foreground">{featured.description}</p>
             <div className="mt-4 flex flex-wrap gap-4 text-sm text-muted-foreground">
-              <span className="flex items-center gap-1.5"><Clock className="size-4" />{formatDate(featured.date, { weekday: "long", day: "numeric", month: "long" })} · {featured.start}</span>
+              <span className="flex items-center gap-1.5"><Clock className="size-4" />{formatDate(featured.date, { weekday: "long", day: "numeric", month: "long" })}, {featured.start}</span>
               <span className="flex items-center gap-1.5"><MapPin className="size-4" />{featured.venue}</span>
             </div>
           </div>

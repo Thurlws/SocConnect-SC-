@@ -45,3 +45,17 @@ export function SocietyAvatar({ society, size = "md", className }: { society: Pi
     </span>
   );
 }
+
+/** The society's official banner, or a tinted dot pattern if it has none or it fails to load. */
+export function SocietyBanner({ society, className }: { society: Pick<Society, "accent" | "bannerUrl">; className?: string }) {
+  const [failed, setFailed] = useState(false);
+  const a = accentClasses[society.accent];
+  const banner = safeHref(society.bannerUrl);
+  return (
+    <div className={cn("overflow-hidden", a.soft, className)}>
+      {banner && !failed
+        ? <img src={banner} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setFailed(true)} className="h-full w-full object-cover" />
+        : <div aria-hidden className={cn("h-full w-full opacity-30 [background-image:radial-gradient(currentColor_1px,transparent_1px)] [background-size:16px_16px]", a.text)} />}
+    </div>
+  );
+}

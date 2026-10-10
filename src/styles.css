@@ -5,9 +5,10 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * SocConnect design system. Warm off-white canvas, midnight-navy text,
- * indigo primary, muted teal secondary. Society accents are separate
- * tokens (--soc-*) so every society has an identity inside one system.
+ * SocConnect design system. Cool granite canvas, ink text and one Prussian
+ * blue primary. Society accents are separate tokens (--soc-*), taken from
+ * Dublin's Georgian doors, so every society has an identity inside one system.
+ * The logo tile is the only gradient; everything else is flat.
  */
 
 @theme inline {
@@ -67,57 +68,55 @@
 
 :root {
   --radius: 0.75rem;
-  --background: oklch(0.985 0.006 85);
-  --surface: oklch(0.965 0.008 85);
-  --foreground: oklch(0.22 0.035 265);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.22 0.035 265);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.22 0.035 265);
-  --primary: oklch(0.5 0.19 272);
-  --primary-foreground: oklch(0.99 0.005 272);
-  --primary-soft: oklch(0.95 0.035 272);
-  --secondary: oklch(0.955 0.01 85);
-  --secondary-foreground: oklch(0.22 0.035 265);
-  --teal: oklch(0.62 0.09 182);
-  --teal-soft: oklch(0.95 0.03 182);
-  --muted: oklch(0.955 0.008 85);
-  --muted-foreground: oklch(0.5 0.025 265);
-  --accent: oklch(0.95 0.012 272);
-  --accent-foreground: oklch(0.22 0.035 265);
-  --destructive: oklch(0.58 0.2 27);
-  --destructive-foreground: oklch(0.99 0 0);
-  --success: oklch(0.6 0.13 155);
-  --warning: oklch(0.72 0.14 70);
-  --border: oklch(0.91 0.01 85);
-  --input: oklch(0.89 0.012 85);
-  --ring: oklch(0.5 0.19 272);
-  --ink: oklch(0.2 0.04 268);
-  --ink-foreground: oklch(0.97 0.01 85);
-  --sidebar: oklch(0.975 0.007 85);
-  --sidebar-foreground: oklch(0.3 0.03 265);
-  --sidebar-primary: oklch(0.5 0.19 272);
-  --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.94 0.02 272);
-  --sidebar-accent-foreground: oklch(0.22 0.035 265);
-  --sidebar-border: oklch(0.92 0.01 85);
-  --sidebar-ring: oklch(0.5 0.19 272);
+  --background: #f2f3f0;
+  --surface: #ebede9;
+  --foreground: #1e2624;
+  --card: #ffffff;
+  --card-foreground: #1e2624;
+  --popover: #ffffff;
+  --popover-foreground: #1e2624;
+  --primary: #274f7c;
+  --primary-foreground: #ffffff;
+  --primary-soft: #e3eaf2;
+  --secondary: #e9ebe7;
+  --secondary-foreground: #1e2624;
+  --teal: #2f7f7a;
+  --teal-soft: #e0efed;
+  --muted: #e9ebe7;
+  --muted-foreground: #5b6663;
+  --accent: #e9ebe7;
+  --accent-foreground: #1e2624;
+  --destructive: #b5402f;
+  --destructive-foreground: #ffffff;
+  --success: #2e7048;
+  --warning: #94650c;
+  --border: #dde0db;
+  --input: #cfd4cd;
+  --ring: #274f7c;
+  --ink: #1e2624;
+  --ink-foreground: #f2f3f0;
+  --sidebar: #f7f8f6;
+  --sidebar-foreground: #3a4542;
+  --sidebar-primary: #274f7c;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e9ebe7;
+  --sidebar-accent-foreground: #1e2624;
+  --sidebar-border: #dde0db;
+  --sidebar-ring: #274f7c;
 
-  --soc-indigo: oklch(0.52 0.18 272);
-  --soc-teal: oklch(0.6 0.1 185);
-  --soc-coral: oklch(0.65 0.17 35);
-  --soc-amber: oklch(0.72 0.15 70);
-  --soc-rose: oklch(0.6 0.19 10);
-  --soc-sky: oklch(0.62 0.13 235);
-  --soc-emerald: oklch(0.6 0.13 155);
-  --soc-plum: oklch(0.5 0.15 320);
+  /* Georgian door colours. Keys match the database `accent` values. */
+  --soc-indigo: #4a4c8e;
+  --soc-teal: #2f7f7a;
+  --soc-coral: #c0492f;
+  --soc-amber: #94650c;
+  --soc-rose: #b0365a;
+  --soc-sky: #3f78a8;
+  --soc-emerald: #2e7048;
+  --soc-plum: #6b3a6e;
 
-  --gradient-hero: radial-gradient(120% 120% at 0% 0%, oklch(0.93 0.06 272) 0%, transparent 55%),
-    radial-gradient(90% 100% at 100% 100%, oklch(0.94 0.05 182) 0%, transparent 55%),
-    var(--card);
-  --gradient-brand: linear-gradient(135deg, var(--primary), oklch(0.6 0.12 200));
-  --shadow-soft: 0 1px 2px oklch(0.2 0.03 265 / 0.04), 0 2px 8px -2px oklch(0.2 0.03 265 / 0.06);
-  --shadow-lift: 0 2px 4px oklch(0.2 0.03 265 / 0.04), 0 12px 28px -10px oklch(0.4 0.12 272 / 0.22);
+  --gradient-brand: linear-gradient(135deg, var(--primary), var(--soc-sky));
+  --shadow-soft: 0 1px 2px rgb(30 38 36 / 0.04);
+  --shadow-lift: 0 1px 2px rgb(30 38 36 / 0.05), 0 8px 24px -10px rgb(30 38 36 / 0.18);
 }
 
 @layer base {
@@ -138,18 +137,13 @@
   }
 }
 
-@utility bg-hero {
-  background: var(--gradient-hero);
-}
 @utility bg-brand {
   background: var(--gradient-brand);
 }
 @utility card-interactive {
-  transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+  transition: border-color 0.15s ease;
   &:hover {
-    box-shadow: var(--shadow-lift);
-    transform: translateY(-2px);
-    border-color: color-mix(in oklab, var(--primary) 25%, var(--border));
+    border-color: var(--input);
   }
 }
 

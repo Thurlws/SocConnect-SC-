@@ -28,7 +28,7 @@ function Comms() {
 
   const items = useMemo<Item[]>(() => {
     const ann: Item[] = announcements.filter((a) => joined.has(a.societyId)).map((a) => ({ id: a.id, kind: "announcement", societyId: a.societyId, title: a.title, body: a.body, at: a.createdAt, to: { to: "/societies/$societyId", params: { societyId: a.societyId } } }));
-    const ev: Item[] = events.filter((e) => joined.has(e.societyId) && e.date >= todayIso()).map((e) => ({ id: e.id, kind: "event", societyId: e.societyId, title: e.title, body: `${formatDate(e.date)} · ${e.start} · ${e.venue}`, at: `${e.date}T${e.start}:00`, to: { to: "/events/$eventId", params: { eventId: e.id } } }));
+    const ev: Item[] = events.filter((e) => joined.has(e.societyId) && e.date >= todayIso()).map((e) => ({ id: e.id, kind: "event", societyId: e.societyId, title: e.title, body: `${formatDate(e.date)}, ${e.start}, ${e.venue}`, at: `${e.date}T${e.start}:00`, to: { to: "/events/$eventId", params: { eventId: e.id } } }));
     const dis: Item[] = messages.map((m) => ({ m, c: channels.find((c) => c.id === m.channelId)! })).filter(({ c }) => c && joined.has(c.societyId)).map(({ m, c }) => ({ id: m.id, kind: "discussion", societyId: c.societyId, title: `${m.author} in #${c.name}`, body: m.body, at: m.createdAt, to: { to: "/societies/$societyId", params: { societyId: c.societyId } } }));
     return [...ann, ...ev, ...dis].sort((a, b) => b.at.localeCompare(a.at));
   }, [announcements, events, messages, joined]);

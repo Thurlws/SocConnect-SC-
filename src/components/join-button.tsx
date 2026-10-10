@@ -45,7 +45,7 @@ export function JoinButton({ society, size = "sm", full }: { society: Society; s
   if (status === "pending")
     return (
       <Button size={size} variant="outline" className={cls} title="Cancel your request" onClick={() => report(cancelRequest(society.id), "Request withdrawn")}>
-        <Clock />Pending · cancel
+        <Clock />Pending, cancel request
       </Button>
     );
   return (

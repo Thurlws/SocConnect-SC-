@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { useData } from "@/lib/api/store";
 import { todayIso } from "@/lib/format";
 import { pageHead } from "@/lib/seo";
-import { timeAgo } from "@/lib/format";
+import { formatDate, timeAgo } from "@/lib/format";
 import { PageHeader, EmptyState } from "@/components/cards";
 import { SocietyAvatar } from "@/components/society-avatar";
 import { CommitteeRequestsSummary } from "@/components/support-requests";
@@ -89,12 +89,12 @@ function Committee() {
         <section className="rounded-xl border bg-card p-5 shadow-soft">
           <h2 className="font-semibold">Membership requests</h2>
           <div className="mt-4 space-y-3">
-            {reqs.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">All caught up — no pending requests.</p>}
+            {reqs.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">Nobody is waiting to join.</p>}
             {reqs.map((r) => (
               <div key={r.id} className="flex items-start gap-3 rounded-lg border p-3">
                 <span className="flex size-9 items-center justify-center rounded-full bg-muted text-xs font-semibold">{r.name.split(" ").map((p) => p[0]).join("")}</span>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold">{r.name} <span className="font-normal text-muted-foreground">· {r.course}</span></p>
+                  <p className="text-sm font-semibold">{r.name} <span className="font-normal text-muted-foreground">{r.course}</span></p>
                   {r.message && <p className="text-sm text-muted-foreground">“{r.message}”</p>}
                   <p className="text-[11px] text-muted-foreground">{timeAgo(r.requestedAt)}</p>
                 </div>
@@ -126,7 +126,7 @@ function Committee() {
           <div className="mt-4 space-y-2">
             {upcoming.map((e) => (
               <Link key={e.id} to="/events/$eventId" params={{ eventId: e.id }} className="flex items-center justify-between rounded-lg border p-3 hover:border-primary/30">
-                <span><span className="block text-sm font-semibold">{e.title}</span><span className="text-xs text-muted-foreground">{e.date} · {e.start} · {e.venue}</span></span>
+                <span><span className="block text-sm font-semibold">{e.title}</span><span className="text-xs text-muted-foreground">{formatDate(e.date)}, {e.start}, {e.venue}</span></span>
                 <span className="text-xs text-muted-foreground">{d.attendeeCount(e)}{e.capacity ? `/${e.capacity}` : ""}</span>
               </Link>
             ))}
