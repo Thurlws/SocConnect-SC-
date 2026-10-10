@@ -68,10 +68,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "SocConnect — One university. Every society. Connected." },
-      { name: "description", content: "Discover university societies, join communities, find events and stay in the loop — all in one place." },
+      { title: "SocConnect: TU Dublin societies and events" },
+      { name: "description", content: "Find TU Dublin societies, join the ones you like, and keep up with their events, posts and calls." },
       { property: "og:title", content: "SocConnect" },
-      { property: "og:description", content: "One university. Every society. Connected." },
+      { property: "og:description", content: "Find TU Dublin societies and keep up with their events." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],

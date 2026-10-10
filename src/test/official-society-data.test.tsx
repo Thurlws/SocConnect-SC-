@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { OfficialInfo } from "@/components/official-info";
-import { SocietyAvatar } from "@/components/society-avatar";
+import { SocietyAvatar, SocietyBanner } from "@/components/society-avatar";
 import type { Society } from "@/lib/types";
 import { safeHref } from "@/lib/utils";
 
@@ -62,5 +62,22 @@ describe("SocietyAvatar", () => {
     const { container } = render(<SocietyAvatar society={{ ...society, logoUrl: undefined }} />);
     expect(container.querySelector("img")).toBeNull();
     expect(container.querySelector("svg")).not.toBeNull();
+  });
+});
+
+describe("SocietyBanner", () => {
+  const banner = "https://societies.tudublin.ie/admin/uploads/images/organisation/profile/banner_th.jpg";
+
+  it("shows the official banner and falls back to the pattern if it fails to load", () => {
+    const { container } = render(<SocietyBanner society={{ ...society, bannerUrl: banner }} />);
+    const img = container.querySelector("img");
+    expect(img).toHaveAttribute("src", banner);
+    fireEvent.error(img!);
+    expect(container.querySelector("img")).toBeNull();
+  });
+
+  it("ignores unsafe banner links", () => {
+    const { container } = render(<SocietyBanner society={{ ...society, bannerUrl: "javascript:alert(1)" }} />);
+    expect(container.querySelector("img")).toBeNull();
   });
 });

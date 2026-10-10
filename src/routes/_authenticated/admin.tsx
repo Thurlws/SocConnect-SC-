@@ -72,7 +72,7 @@ function AdminPage() {
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <h2 className="font-semibold">{s.name} <span className="text-sm font-normal text-muted-foreground">· /societies/{s.slug}</span></h2>
-              <p className="text-sm text-muted-foreground">{s.category}{s.status === "archived" && " · Archived"}</p>
+              <p className="text-sm text-muted-foreground">{s.category}{s.status === "archived" && ", archived"}</p>
             </div>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={() => setEditing(s)}>Edit</Button>
@@ -122,13 +122,13 @@ function Committee({ society, roles, invites }: { society: SocietyRow; roles: Ro
       <ul className="mt-2 space-y-1 text-sm">
         {roles.map((r) => (
           <li key={r.id} className="flex items-center justify-between gap-2">
-            <span>{r.profiles?.display_name || "Member"} · <span className="text-muted-foreground">{r.position}</span></span>
+            <span>{r.profiles?.display_name || "Member"}, <span className="text-muted-foreground">{r.position}</span></span>
             <Button variant="ghost" size="sm" aria-label="Remove" onClick={() => remove("society_roles", r.id)}><Trash2 /></Button>
           </li>
         ))}
         {invites.map((i) => (
           <li key={i.id} className="flex items-center justify-between gap-2 text-muted-foreground">
-            <span>{i.email} · {i.position} · waiting for first sign-in</span>
+            <span>{i.email}, {i.position}, waiting for first sign-in</span>
             <Button variant="ghost" size="sm" aria-label="Cancel invite" onClick={() => remove("role_invites", i.id)}><Trash2 /></Button>
           </li>
         ))}

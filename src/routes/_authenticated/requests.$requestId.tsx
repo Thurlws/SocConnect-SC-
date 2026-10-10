@@ -126,7 +126,7 @@ function RequestPage() {
                 ["Assigned to", r.assignedTo ?? "Unassigned"],
                 ["Category", categoryLabel[r.category]],
                 ["Priority", priorityLabel[r.priority]],
-                ["Opened", `${formatDate(r.createdAt)} · ${timeAgo(r.createdAt)}`],
+                ["Opened", `${formatDate(r.createdAt)}, ${timeAgo(r.createdAt)}`],
                 ["Last update", timeAgo(r.updatedAt)],
               ].map(([k, v]) => (
                 <div key={k} className="flex justify-between gap-4">
@@ -252,7 +252,7 @@ function ManagePanel({ request: r }: { request: SupportRequest }) {
             <SelectItem value={UNASSIGNED}>Unassigned</SelectItem>
             {committee.map((c) => (
               <SelectItem key={c.name} value={c.name}>
-                {c.name} · {c.position}
+                {c.name}, {c.position}
               </SelectItem>
             ))}
           </SelectContent>

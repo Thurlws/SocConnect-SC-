@@ -30,7 +30,7 @@ export function RoomCard({ room, showSociety }: { room: CallRoom; showSociety?: 
       )}
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold">
-          <Link to="/call/$roomId" params={{ roomId: room.id }} className="hover:underline">{showSociety && <span className="text-muted-foreground">{s.shortName} · </span>}{room.name}</Link>
+          <Link to="/call/$roomId" params={{ roomId: room.id }} className="hover:underline">{showSociety && <span className="text-muted-foreground">{s.shortName}: </span>}{room.name}</Link>
         </p>
         <p className="truncate text-xs text-muted-foreground">{room.description}</p>
       </div>
@@ -54,7 +54,7 @@ export function MeetingCard({ meeting }: { meeting: CallRoom }) {
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold">{meeting.name}</p>
         <p className="truncate text-xs text-muted-foreground">
-          <CalendarClock className="mr-1 inline size-3" />{today ? "Today" : formatDate(meeting.date ?? todayIso())} · {meeting.start} · {s.shortName}{meeting.host ? ` · hosted by ${meeting.host}` : ""}
+          <CalendarClock className="mr-1 inline size-3" />{today ? "Today" : formatDate(meeting.date ?? todayIso())}, {meeting.start}, {s.shortName}{meeting.host ? `, hosted by ${meeting.host}` : ""}
         </p>
       </div>
       <div className="flex items-center gap-1">
@@ -73,12 +73,12 @@ export function RecapCard({ recap }: { recap: CallRecap }) {
   return (
     <Link to="/recaps/$recapId" params={{ recapId: recap.id }} className="card-interactive block rounded-xl border bg-card p-4 shadow-soft">
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <FileText className="size-3.5 text-primary" />{s?.shortName} · {formatDate(recap.date)} · {Math.round(recap.durationSec / 60)} min
+        <FileText className="size-3.5" />{s?.shortName}, {formatDate(recap.date)}, {Math.round(recap.durationSec / 60)} min
         {recap.shared && <span className="ml-auto flex items-center gap-1"><Share2 className="size-3" />Shared</span>}
       </div>
       <p className="mt-2 text-sm font-semibold">{recap.title}</p>
       <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{recap.summary.overview}</p>
-      <p className="mt-2 text-xs text-muted-foreground">{recap.summary.actionItems.length} action items · {recap.participants.length} people</p>
+      <p className="mt-2 text-xs text-muted-foreground">{recap.summary.actionItems.length} action items, {recap.participants.length} people</p>
     </Link>
   );
 }

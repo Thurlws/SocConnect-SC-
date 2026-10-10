@@ -20,19 +20,25 @@ import { timeAgo, formatDate } from "@/lib/format";
 type NavItem = { to: string; label: string; icon: LucideIcon; committeeOnly?: boolean };
 const nav: NavItem[] = [
   { to: "/", label: "Home", icon: Home },
-  { to: "/societies", label: "Discover Societies", icon: Compass },
+  { to: "/societies", label: "Discover societies", icon: Compass },
   { to: "/events", label: "Events", icon: CalendarDays },
-  { to: "/my-societies", label: "My Societies", icon: Users },
+  { to: "/my-societies", label: "My societies", icon: Users },
   { to: "/communications", label: "Communications", icon: MessagesSquare },
-  { to: "/requests", label: "My Requests", icon: MessageSquareText },
+  { to: "/requests", label: "My requests", icon: MessageSquareText },
   { to: "/calls", label: "Calls", icon: Video },
   { to: "/society-pulse", label: "Society Pulse", icon: Waypoints },
   { to: "/committee", label: "Committee", icon: LayoutDashboard, committeeOnly: true },
-  { to: "/inbox", label: "Request Inbox", icon: Inbox, committeeOnly: true },
+  { to: "/inbox", label: "Request inbox", icon: Inbox, committeeOnly: true },
   { to: "/settings", label: "Settings", icon: Settings },
 ];
 
 const titles: Record<string, string> = Object.fromEntries(nav.map((n) => [n.to, n.label]));
+
+// Bottom bar shows the last word only: "Discover societies" becomes "Societies".
+const shortLabel = (label: string) => {
+  const w = label.split(" ").pop() ?? label;
+  return w.charAt(0).toUpperCase() + w.slice(1);
+};
 
 function Logo({ collapsed }: { collapsed?: boolean }) {
   return (
@@ -63,7 +69,7 @@ function SidebarBody({ collapsed, onNavigate }: { collapsed: boolean; onNavigate
             title={collapsed ? n.label : undefined}
             className={cn(
               "relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent",
-              isActive(n.to) && "bg-sidebar-accent text-primary",
+              isActive(n.to) && "bg-primary-soft font-semibold text-primary hover:bg-primary-soft",
               collapsed && "justify-center px-0",
             )}
           >
@@ -74,7 +80,7 @@ function SidebarBody({ collapsed, onNavigate }: { collapsed: boolean; onNavigate
         ))}
         {!collapsed && (
           <div className="pt-6">
-            <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">My communities</p>
+            <p className="px-3 pb-2 text-xs font-semibold text-muted-foreground">Your societies</p>
             {joinedSocieties.slice(0, 5).map((s) => (
               <Link
                 key={s.id}
@@ -96,7 +102,7 @@ function SidebarBody({ collapsed, onNavigate }: { collapsed: boolean; onNavigate
         {!collapsed && (
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold">{user.name}</p>
-            <p className="truncate text-xs text-muted-foreground">{committeeSeats[0] ? `${committeeSeats[0].position} · ${committeeSeats[0].short_name}` : "Student"}</p>
+            <p className="truncate text-xs text-muted-foreground">{committeeSeats[0] ? `${committeeSeats[0].position}, ${committeeSeats[0].short_name}` : "Student"}</p>
           </div>
         )}
       </div>
@@ -263,7 +269,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           return (
             <Link key={n.to} to={n.to} className={cn("flex flex-col items-center gap-1 py-2.5 text-[10px] font-medium text-muted-foreground", active && "text-primary")}>
               <n.icon className="size-5" />
-              {n.label.split(" ").pop()}
+              {shortLabel(n.label)}
             </Link>
           );
         })}

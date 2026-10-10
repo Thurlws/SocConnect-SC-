@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { useSocietyFits } from "@/components/society-ai";
 
 export const Route = createFileRoute("/_authenticated/societies/")({
-  head: () => pageHead("Discover Societies", "Browse every society on campus by interest, category and size."),
+  head: () => pageHead("Discover societies", "Browse every TU Dublin society by campus, category and interest."),
   component: Discover,
 });
 
@@ -43,7 +43,7 @@ function Discover() {
 
   return (
     <div>
-      <PageHeader title="Discover societies" subtitle={`${societies.length} societies across campus. Find your people.`} />
+      <PageHeader title="Discover societies" subtitle={`All ${societies.length} TU Dublin societies. Filter by campus or what they're about, then open one to join.`} />
       <div className="mb-6 space-y-4 rounded-xl border bg-card p-4 shadow-soft">
         <div className="flex flex-col gap-3 md:flex-row">
           <div className="relative flex-1">

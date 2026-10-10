@@ -17,7 +17,7 @@ export const Route = createFileRoute("/_authenticated/recaps/$recapId")({
   head: () => ({
     meta: [
       { title: "Call recap · SocConnect" },
-      { name: "description", content: "AI summary, decisions and action items from a society call — plus ask questions about it." },
+      { name: "description", content: "Summary, decisions and action items from a society call, and questions you can ask about it." },
       { property: "og:title", content: "Call recap · SocConnect" },
       { property: "og:description", content: "AI summary, decisions and action items from a society call." },
       { property: "og:type", content: "article" },
@@ -71,10 +71,10 @@ function RecapPage() {
           {s && <SocietyAvatar society={s} size="lg" />}
           <div>
             {recap.summary.source === "fallback"
-              ? <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground"><FileText className="size-3.5" />Call recap · basic summary, AI unavailable</p>
-              : <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-primary"><Wand2 className="size-3.5" />AI call recap</p>}
+              ? <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground"><FileText className="size-3.5" />Basic summary (the AI wasn't available)</p>
+              : <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground"><Wand2 className="size-3.5" />Recap written by AI</p>}
             <h1 className="font-display text-2xl font-semibold">{recap.title}</h1>
-            <p className="text-sm text-muted-foreground">{formatDate(recap.date)} · {Math.max(1, Math.round(recap.durationSec / 60))} min · {recap.participants.join(", ")}</p>
+            <p className="text-sm text-muted-foreground">{formatDate(recap.date)}, {Math.max(1, Math.round(recap.durationSec / 60))} min with {recap.participants.join(", ")}</p>
           </div>
         </div>
         <Button variant={recap.shared ? "outline" : "default"} disabled={recap.shared || !canShareRecap(recap)} title={canShareRecap(recap) ? undefined : "Only the committee or the call's host can share"} onClick={async () => { const o = await shareRecap(recap.id); if (o.ok) toast.success(`Recap posted to #general in ${s?.shortName}`); else toast.error(o.error); }}>

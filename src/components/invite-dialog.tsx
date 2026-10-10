@@ -54,7 +54,7 @@ export function InviteDialog({ roomId, roomName, societyName, children }: { room
         <DialogHeader>
           <DialogTitle>Invite guests to this call</DialogTitle>
           <DialogDescription>
-            {societyName ? `${societyName} · ` : ""}{roomName}. Guests join without an account. Members can just open the room in SocConnect.
+            {societyName ? `${societyName}: ` : ""}{roomName}. Guests join without an account. Members can just open the room in SocConnect.
           </DialogDescription>
         </DialogHeader>
         {!url ? (

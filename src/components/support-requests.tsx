@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { ArrowRight, Check, Inbox, MessageSquarePlus, UserRound } from "lucide-react";
+import { Check, Inbox, MessageSquarePlus, UserRound } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { useData } from "@/lib/api/store";
@@ -326,13 +326,12 @@ export function CommitteeRequestsSummary({ societyId }: { societyId: string }) {
             Member requests
           </h2>
           <p className="text-sm text-muted-foreground">
-            {open} open · {inProgress} in progress
+            {open} open, {inProgress} in progress
           </p>
         </div>
         <Button asChild size="sm" variant="outline">
           <Link to="/inbox">
             Open inbox
-            <ArrowRight />
           </Link>
         </Button>
       </div>
@@ -352,7 +351,7 @@ export function CommitteeRequestsSummary({ societyId }: { societyId: string }) {
             <span className="min-w-0">
               <span className="block truncate text-sm font-semibold">{r.title}</span>
               <span className="text-xs text-muted-foreground">
-                {r.submitterName} · {timeAgo(r.createdAt)}
+                {r.submitterName}, {timeAgo(r.createdAt)}
               </span>
             </span>
             <span className="flex shrink-0 items-center gap-1.5">
