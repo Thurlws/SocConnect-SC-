@@ -120,8 +120,8 @@ export function RequestRow({
           {s && (
             <span className={cn("font-semibold", accentClasses[s.accent].text)}>{s.shortName}</span>
           )}
-          <span>· {categoryLabel[r.category]}</span>
-          <span>· {timeAgo(r.createdAt)}</span>
+          <span>{categoryLabel[r.category]}</span>
+          <span>{timeAgo(r.createdAt)}</span>
         </p>
         <p className="mt-1 truncate font-semibold">{r.title}</p>
         <p className="mt-0.5 flex flex-wrap items-center gap-x-3 text-xs text-muted-foreground">

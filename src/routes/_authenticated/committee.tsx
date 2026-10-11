@@ -111,7 +111,7 @@ function Committee() {
               <ul className="mt-2 space-y-1.5">
                 {resolved.slice(0, 5).map((r) => (
                   <li key={r.id} className="flex items-center justify-between gap-2 text-sm">
-                    <span className="truncate">{r.name} <span className="text-muted-foreground">· {r.course}</span></span>
+                    <span className="truncate">{r.name} <span className="text-muted-foreground">{r.course}</span></span>
                     <span className={r.outcome === "approved" ? "shrink-0 rounded-full bg-success/15 px-2 py-0.5 text-xs font-medium text-success" : "shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"}>
                       {r.outcome === "approved" ? "Approved" : "Declined"}
                     </span>

@@ -272,7 +272,7 @@ export function CallExperience({
       <div className={cn("mx-auto", guest ? "max-w-lg px-4 py-10" : "max-w-xl")}>
         {guest ? (
           <p className="mb-6 text-center font-display text-sm font-semibold tracking-tight text-muted-foreground">
-            SocConnect <span className="opacity-50">·</span> {society.shortName}
+            {society.shortName} on SocConnect
           </p>
         ) : (
           <Link to="/calls" className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="size-4" />All calls</Link>

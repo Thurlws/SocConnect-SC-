@@ -71,7 +71,7 @@ function AdminPage() {
         <section key={s.id} className="rounded-xl border bg-card p-6 shadow-soft">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h2 className="font-semibold">{s.name} <span className="text-sm font-normal text-muted-foreground">· /societies/{s.slug}</span></h2>
+              <h2 className="font-semibold">{s.name} <span className="text-sm font-normal text-muted-foreground">/societies/{s.slug}</span></h2>
               <p className="text-sm text-muted-foreground">{s.category}{s.status === "archived" && ", archived"}</p>
             </div>
             <div className="flex gap-2">

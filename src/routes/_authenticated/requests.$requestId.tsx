@@ -92,7 +92,7 @@ function RequestPage() {
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <SocietyAvatar society={s} size="xs" />
               <span className={cn("font-semibold", accentClasses[s.accent].text)}>{s.name}</span>
-              <span>· {categoryLabel[r.category]}</span>
+              <span>{categoryLabel[r.category]}</span>
               <RequestStatusBadge status={r.status} />
               <PriorityBadge priority={r.priority} />
             </div>
