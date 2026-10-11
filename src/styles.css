@@ -5,8 +5,8 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * SocConnect design system. Cool granite canvas, ink text and one Prussian
- * blue primary. Society accents are separate tokens (--soc-*), taken from
+ * SocConnect design system. Cool granite canvas, ink text and one TU Dublin
+ * blue primary (#004c6c). Society accents are separate tokens (--soc-*), taken from
  * Dublin's Georgian doors, so every society has an identity inside one system.
  * The logo tile is the only gradient; everything else is flat.
  */
@@ -75,9 +75,9 @@
   --card-foreground: #1e2624;
   --popover: #ffffff;
   --popover-foreground: #1e2624;
-  --primary: #274f7c;
+  --primary: #004c6c;
   --primary-foreground: #ffffff;
-  --primary-soft: #e3eaf2;
+  --primary-soft: #e0ebef;
   --secondary: #e9ebe7;
   --secondary-foreground: #1e2624;
   --teal: #2f7f7a;
@@ -92,17 +92,17 @@
   --warning: #94650c;
   --border: #dde0db;
   --input: #cfd4cd;
-  --ring: #274f7c;
+  --ring: #004c6c;
   --ink: #1e2624;
   --ink-foreground: #f2f3f0;
   --sidebar: #f7f8f6;
   --sidebar-foreground: #3a4542;
-  --sidebar-primary: #274f7c;
+  --sidebar-primary: #004c6c;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #e9ebe7;
   --sidebar-accent-foreground: #1e2624;
   --sidebar-border: #dde0db;
-  --sidebar-ring: #274f7c;
+  --sidebar-ring: #004c6c;
 
   /* Georgian door colours. Keys match the database `accent` values. */
   --soc-indigo: #4a4c8e;
@@ -114,7 +114,7 @@
   --soc-emerald: #2e7048;
   --soc-plum: #6b3a6e;
 
-  --gradient-brand: linear-gradient(135deg, var(--primary), var(--soc-sky));
+  --gradient-brand: linear-gradient(135deg, var(--primary), #2a7f9e);
   --shadow-soft: 0 1px 2px rgb(30 38 36 / 0.04);
   --shadow-lift: 0 1px 2px rgb(30 38 36 / 0.05), 0 8px 24px -10px rgb(30 38 36 / 0.18);
 }

@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { CalendarDays, Check, Clock, Compass, MapPin, MessagesSquare, Users, Waypoints, Mail, Loader2 } from "lucide-react";
+import { CalendarDays, Compass, MessagesSquare, Waypoints, Mail, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { pageHead } from "@/lib/seo";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,11 +8,9 @@ import { emailAllowed, useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { SocietyAvatar, accentClasses } from "@/components/society-avatar";
-import { dayParts, formatDate, todayIso } from "@/lib/format";
+import { SocietyAvatar, SocietyBanner } from "@/components/society-avatar";
 import { cn } from "@/lib/utils";
-import type { SocietyAccent } from "@/lib/types";
+import type { Society } from "@/lib/types";
 
 export const Route = createFileRoute("/welcome")({
   head: () => pageHead("Welcome", "Every TU Dublin society in one place. Join societies, register for events and get their announcements."),
@@ -26,77 +24,44 @@ const features = [
   { icon: Waypoints, t: "For committees", d: "Manage members, post updates, and use Society Pulse to find societies to run joint events with." },
 ];
 
-/** The first `weekday` (0 = Sunday) at least `minDays` after `fromIso`, so the preview never shows past dates. */
-function upcomingWeekday(fromIso: string, weekday: number, minDays: number) {
-  const d = new Date(`${fromIso}T12:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + minDays);
-  while (d.getUTCDay() !== weekday) d.setUTCDate(d.getUTCDate() + 1);
-  return d.toISOString().slice(0, 10);
-}
+/**
+ * Real societies from the official TU Dublin import, shown to signed-out visitors
+ * (who can't read the database). No made-up events or posts here.
+ */
+const showcase: Pick<Society, "name" | "shortName" | "category" | "campus" | "icon" | "accent" | "logoUrl" | "bannerUrl">[] = [
+  { name: "Photo Society", shortName: "Photo Society", category: "Student Media", campus: "City", icon: "Camera", accent: "rose",
+    logoUrl: "https://societies.tudublin.ie/admin/uploads/images/organisation/profile/logo1_1632311075_th.jpg",
+    bannerUrl: "https://societies.tudublin.ie/admin/uploads/images/organisation/profile/banner1_1632311080_th.jpg" },
+  { name: "Formula Student Society", shortName: "Formula Student", category: "Academic/Course Related", campus: "Tallaght", icon: "Cog", accent: "sky",
+    logoUrl: "https://societies.tudublin.ie/admin/uploads/images/organisation/profile/Logo_1698531278_th.png",
+    bannerUrl: "https://societies.tudublin.ie/admin/uploads/images/organisation/profile/fa9c22ea-22dd-4e20-b271-5e5af39ba6a4_1722360270_th.JPG" },
+  { name: "Ethical Hackers Society", shortName: "Ethical Hackers", category: "Gaming/Technology", campus: "Blanchardstown", icon: "Code2", accent: "indigo",
+    logoUrl: "https://societies.tudublin.ie/admin/uploads/images/organisation/profile/android-chrome-512x512_1733823656_th.png",
+    bannerUrl: "https://societies.tudublin.ie/admin/uploads/images/organisation/profile/oldbanner_1733823715_th.png" },
+  { name: "Korean Society", shortName: "Korean Society", category: "Arts/Cultural/Languages", campus: "City", icon: "Globe2", accent: "coral",
+    logoUrl: "https://societies.tudublin.ie/admin/uploads/images/organisation/profile/bannerinsta_1696117352_th.jpg",
+    bannerUrl: "https://societies.tudublin.ie/admin/uploads/images/organisation/profile/KSocJPG_1726690707_th.jpg" },
+];
 
-type PreviewEvent = { society: string; icon: string; accent: SocietyAccent; title: string; date: string; time: string; venue: string; going: string; registered: boolean };
-
-function PreviewEventCard({ e }: { e: PreviewEvent }) {
-  const { day, month } = dayParts(e.date);
-  const a = accentClasses[e.accent];
+function SocietyPreview() {
   return (
-    <div className="flex flex-col overflow-hidden rounded-xl border bg-card">
-      <div className={cn("flex items-start justify-between p-4", a.soft)}>
-        <div className="flex min-w-11 flex-col items-center rounded-lg bg-card px-2.5 py-1.5">
-          <span className="text-[11px] font-semibold text-muted-foreground">{month}</span>
-          <span className="font-display text-xl font-semibold leading-none">{day}</span>
-        </div>
-        <SocietyAvatar society={{ name: e.society, icon: e.icon, accent: e.accent }} size="sm" className="bg-card" />
+    <div aria-label="Some of the societies on SocConnect" className="overflow-hidden rounded-2xl border bg-card shadow-lift">
+      <div className="border-b px-5 py-4">
+        <h2 className="font-display text-[15px] font-semibold">Societies across every campus</h2>
+        <p className="text-xs text-muted-foreground">Sign in to join them and see what they have on</p>
       </div>
-      <div className="flex flex-1 flex-col gap-2 p-4">
-        <p className={cn("text-xs font-medium", a.text)}>{e.society}</p>
-        <h3 className="font-display text-base font-semibold leading-snug">{e.title}</h3>
-        <div className="mt-auto space-y-1 pt-2 text-xs text-muted-foreground">
-          <p className="flex items-center gap-1.5"><Clock className="size-3.5" />{formatDate(e.date)}, {e.time}</p>
-          <p className="flex items-center gap-1.5"><MapPin className="size-3.5" />{e.venue}</p>
-        </div>
-        <div className="flex items-center justify-between pt-2">
-          <span className="flex items-center gap-1 text-xs text-muted-foreground"><Users className="size-3.5" />{e.going}</span>
-          {e.registered ? <Badge variant="soft"><Check className="size-3" />Registered</Badge> : <Badge variant="secondary">Open</Badge>}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/** A static example of the home page, in place of a picture. */
-function HomePreview() {
-  const today = todayIso();
-  const walk = upcomingWeekday(today, 4, 2);
-  const chess = upcomingWeekday(walk, 3, 1);
-  const preview: PreviewEvent[] = [
-    { society: "Photo Society", icon: "Camera", accent: "rose", title: "Night walk along the Liffey", date: walk, time: "19:00–21:00", venue: "Ha'penny Bridge, north side", going: "18 of 30", registered: true },
-    { society: "Chess Society", icon: "Dices", accent: "emerald", title: "Rapid tournament", date: chess, time: "18:00–21:00", venue: "Grangegorman, Central Quad", going: "24 of 40", registered: false },
-  ];
-  return (
-    <div aria-label="Example of the SocConnect home page" className="overflow-hidden rounded-2xl border bg-card shadow-lift">
-      <div className="flex items-center justify-between border-b px-5 py-4">
-        <div>
-          <h2 className="font-display text-[15px] font-semibold">Coming up for you</h2>
-          <p className="text-xs text-muted-foreground">From your societies and registrations</p>
-        </div>
-        <span className="text-sm font-medium text-primary">All events</span>
-      </div>
-      <div className="space-y-4 p-5">
-        <div className="grid gap-4 sm:grid-cols-2">
-          {preview.map((e, i) => <div key={e.title} className={cn(i === 1 && "hidden sm:block")}><PreviewEventCard e={e} /></div>)}
-        </div>
-        <div className="flex gap-4 rounded-xl border bg-card p-4">
-          <SocietyAvatar society={{ name: "Drama Society", icon: "Clapperboard", accent: "plum" }} size="sm" />
-          <div className="min-w-0">
-            <p className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
-              <span className={cn("font-semibold", accentClasses.plum.text)}>Drama Society</span><span>Niamh, committee</span><span>2h ago</span>
-            </p>
-            <p className="mt-1 font-semibold">Auditions for the winter show</p>
-            <p className="mt-0.5 text-sm text-muted-foreground">Sign up for a slot by Friday. No experience needed, just bring a one-minute piece.</p>
-          </div>
-        </div>
-      </div>
+      <ul className="grid gap-4 p-5 sm:grid-cols-2">
+        {showcase.map((s, i) => (
+          <li key={s.name} className={cn("overflow-hidden rounded-xl border bg-card", i > 1 && "hidden sm:block")}>
+            <SocietyBanner society={s} className="h-20" />
+            <div className="px-4 pb-4">
+              <SocietyAvatar society={s} size="md" className="-mt-6 border-4 border-card bg-card" />
+              <p className="mt-2 font-display text-[15px] font-semibold leading-snug">{s.shortName}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">{s.category}, {s.campus} campus</p>
+            </div>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -180,7 +145,7 @@ function Welcome() {
           </p>
           <div className="mt-8 max-w-md"><SignInCard /></div>
         </div>
-        <HomePreview />
+        <SocietyPreview />
       </section>
 
       <section className="border-t bg-card">
