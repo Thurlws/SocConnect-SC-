@@ -1,0 +1,27 @@
+# Local-only Supabase stack for tests and bug reproduction. Production runs on Lovable Cloud,
+# which owns supabase/config.toml at the repo root, so this lives in its own workdir:
+#   npm run db:start   (supabase --workdir dev start)
+# Anything not set here uses the Supabase CLI defaults.
+# The CLI also reads SUPABASE_PROJECT_ID from the committed .env, so containers get the
+# production project id in their names. They are still purely local.
+project_id = "socconnect-local"
+
+[db.seed]
+enabled = true
+# Replays the real migrations in order (0000…0006) on every `db:reset`. They are not
+# copied into dev/supabase/migrations so there is one source of truth.
+sql_paths = ["../../drizzle/migrations/*.sql"]
+
+[auth]
+site_url = "http://localhost:8080"
+additional_redirect_urls = ["http://127.0.0.1:8080", "http://localhost:3000"]
+
+[auth.rate_limit]
+# High enough for repeated local runs. The production hourly cap is set in Lovable Cloud.
+email_sent = 100
+
+[auth.email]
+# Match Supabase's hosted defaults so new and returning users take the same paths as in
+# production: new addresses get "Confirm signup", confirmed ones get "Magic link".
+enable_confirmations = true
+max_frequency = "60s"
