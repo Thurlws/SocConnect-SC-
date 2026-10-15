@@ -10,6 +10,7 @@
 <!-- LOVABLE:END -->
 
 ## SocConnect architecture
+- Current state, open bugs and the roadmap live in `context/` (start with `context/README.md`); update those notes when work changes the picture.
 - App data comes from `src/lib/api/` (`useData()`: one TanStack Query over the database, polled until realtime); pages never touch the database directly — keeps one seam for data.
 - Permissions and multi-step writes are Postgres functions/RLS (join_society, decide_membership, register_for_event, support-request functions); mutations return `Outcome` `{ ok, error }` from `src/lib/validation.ts`, which only holds Zod form checks — the browser is never trusted.
 - "Today" and times are real Europe/Dublin via `src/lib/format.ts`; societies are addressed by slug in the UI and mapped to ids in the data layer — keeps URLs stable.
