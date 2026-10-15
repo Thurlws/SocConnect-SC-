@@ -16,7 +16,8 @@
     "supabase": "npx -y supabase@2.119.0 --workdir dev",
     "db:start": "npm run -s supabase -- start",
     "db:stop": "npm run -s supabase -- stop",
-    "db:reset": "npm run -s supabase -- db reset"
+    "db:reset": "npm run -s supabase -- db reset",
+    "db:check-sign-in": "node dev/check-sign-in-email.mjs"
   },
   "overrides": {
     "rolldown": "1.2.1"
