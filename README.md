@@ -1,235 +1,148 @@
 # SocConnect
 
-**One university. Every society. Connected.**
+A web app for university societies. Students find societies, join them, register for events and get announcements in one feed. Committees review membership requests, post updates, run events, answer member requests and hold video calls with AI recaps.
 
-SocConnect is a university society platform designed to bring society discovery, membership, communications, events, and community management into one place.
+It started as a hackathon project at TU Dublin and currently supports TU Dublin only. The domain rules, branding and society data are TU Dublin's.
 
-Instead of relying on a different combination of social media accounts, group chats, emails, and spreadsheets for every society, students can use SocConnect to find communities, keep up with announcements, discover events, and participate in university life. Society committees can use dedicated workspaces to share updates, organise activities, and manage their communities.
+> **Status:** prototype with a real backend, not yet piloted. Known open problems and the plan are in [`context/`](context/README.md). Start there if you're picking up the work.
 
-> **Project status:** Hackathon project / prototype. Features described as planned or in development should not be assumed to be production-ready. Update this README as implementation progresses.
+## How it fits together
 
-## Why SocConnect?
+- **Frontend:** React 19, TypeScript, TanStack Router and Start (server rendering), Tailwind CSS 4, shadcn/ui.
+- **Backend:** Supabase (Postgres and Auth), managed by Lovable Cloud. The browser reads and writes the database directly with the signed-in user's token. Row-level security policies and SQL functions in [`drizzle/migrations/`](drizzle/migrations) enforce every permission and business rule, so the browser is never trusted.
+- **Server functions** in `src/lib/*.functions.ts` handle the parts that need secrets: LiveKit call tokens and guest links, AI recaps, captions and society recommendations.
+- **Sign-in:** an emailed sign-in link (`supabase.auth.signInWithOtp`). Only `@mytudublin.ie` and `@tudublin.ie` addresses can sign up; a database trigger enforces this.
 
-University society information and communication can be spread across multiple platforms. This makes it harder for students to discover communities and keep track of activities, while committees may need to maintain several separate tools.
+[`AGENTS.md`](AGENTS.md) has the design decisions in more detail.
 
-SocConnect aims to provide a central home for university societies, making it easier to:
+## Requirements
 
-- **Discover** societies and communities that match students' interests.
-- **Connect** through society announcements and discussions.
-- **Participate** by finding events and managing registrations.
-- **Collaborate** by discovering potential partnerships between societies.
+- Node.js 22 or newer (we use 24 in CI and 26 locally)
+- [Bun](https://bun.sh) as the package manager (`bun.lock`, also used by Lovable). npm works with the same `package.json`, but don't commit a `package-lock.json`.
+- Docker, only for the local database
 
-## Core features
-
-### For students
-- Browse and search societies by name, category, and interests.
-- View society profiles and membership information.
-- Join societies or request membership where approval is required.
-- See announcements and updates from joined societies in one place.
-- Discover events and manage event registrations.
-- Explore recommendations based on declared interests.
-
-### For society committees
-- Maintain a society profile.
-- Publish announcements.
-- Create and manage events.
-- Review membership requests.
-- Communicate with members.
-- Keep useful society information and resources together.
-
-### Society Pulse
-**Society Pulse** is SocConnect's collaboration-discovery concept. It helps societies explore shared interests and generate ideas for joint activities—for example, a proposed music technology workshop between technology and music communities.
-
-Suggestions are proposals, not confirmed partnerships or scheduled events.
-
-## Project status and scope
-
-SocConnect is being developed in stages:
-
-1. **Frontend prototype:** establish the design, navigation, screens, and demo interactions.
-2. **Full-stack implementation:** connect the interface to persistent data and implement real authentication, membership, events, and communications.
-3. **Testing and deployment:** verify user journeys, permissions, reliability, and deployment configuration.
-
-The current repository may contain demo data and local-only interactions. Check the implementation before relying on any feature.
-
-Unless explicitly implemented and tested in this repository, do **not** assume the following are available:
-- Real Microsoft university-account authentication.
-- Persistent backend storage.
-- Production-grade role-based access control.
-- Real-time messaging or push notifications.
-- Verified live university society or event information.
-
-Demo societies, events, memberships, and statistics should be treated as sample data, not verified information about any particular university.
-
-## Technology
-
-- React 19 + TypeScript, TanStack Start/Router (SSR), Vite
-- Tailwind CSS v4 with shadcn/ui (Radix) components, Lucide icons
-- Zod for input validation, Sonner toasts, Vitest + Testing Library
-- AI call recaps through server functions (`src/lib/calls.functions.ts`); the `LOVABLE_API_KEY` stays on the server
-- Real multi-person video calls via LiveKit when configured (`src/components/live-call.tsx`); tokens are minted server-side
-
-There is **no backend database or real authentication yet**. All app state is demo state in the browser (see *Demo mode* below).
-
-## Getting started
-
-### Prerequisites
-
-- Node.js 22+ (tested with Node 26)
-- [Bun](https://bun.sh) is the project's package manager (`bun.lock`, used by Lovable). npm also works with the same `package.json`. Don't commit a `package-lock.json`.
-
-### Install, run and build
+## Run it
 
 ```bash
-bun install          # or: npm install
-bun run dev          # or: npm run dev
-bun run build        # or: npm run build
+bun install
+bun run dev
 ```
 
-### Run checks
+The app runs on http://localhost:8080.
+
+Out of the box it talks to the **production** Lovable Cloud backend, because the committed `.env` holds its public URL and key. That database has real students in it. Use the local database below for anything beyond looking around.
+
+## Local database
+
+The Supabase CLI runs through `npx`, pinned to one version, so there's nothing to install apart from Docker.
 
 ```bash
-bun run typecheck    # tsc --noEmit
-bun run test         # vitest run
-bun run lint         # eslint (the existing code has many Prettier formatting errors; run `bun run format` to fix them)
+bun run db:start          # first run pulls the Docker images, takes a few minutes
+bun run db:reset          # rebuild the database from drizzle/migrations
+bun run db:check-sign-in  # check that new and returning users get a sign-in email
+bun run db:stop
 ```
 
-## Demo mode: what's real and what isn't
+`db:start` replays all migrations in `drizzle/migrations/` (in filename order) and prints the local URLs and keys. Run `bun run supabase status` to see them again. To point the app at the local stack, create `.env.local` (git ignores it, and it overrides `.env`):
 
-All state lives in `src/lib/demo-store.tsx`. It's saved to `localStorage` under `socconnect-demo-v2`, so it stays in **this browser only** and other users never see it. Reset it from the profile menu or **Settings → Demo controls**. The two demo accounts (Alex Morgan, student; Jordan Lee, CompSoc committee) are fictional, and anyone can switch between them. **The account switcher is not authentication, and the checks below are not security.**
+```bash
+VITE_SUPABASE_URL=http://127.0.0.1:54321
+VITE_SUPABASE_PUBLISHABLE_KEY=<publishable key from db:start>
+SUPABASE_URL=http://127.0.0.1:54321
+SUPABASE_PUBLISHABLE_KEY=<publishable key from db:start>
+SUPABASE_SERVICE_ROLE_KEY=<secret key from db:start>
+```
 
-Business rules are pure functions in `src/lib/demo-rules.ts`, tested in `src/test/demo-rules.test.ts`. Every store action returns `{ ok, error }`, so the UI shows a clear error instead of corrupting the state:
+Local sign-in emails never leave your machine. Read them in Mailpit at http://127.0.0.1:54324.
 
-- **Membership:** join open societies instantly; approval-only societies (CompSoc, RoboSoc, VolSoc) create a pending request that you can cancel. Duplicate joins or requests, leaving a society you aren't in, and a committee member leaving their own society are all rejected.
-- **Request review:** only the society's own committee can review. **Approve** adds the person as a member and updates the member count; **Decline** doesn't. A student's own request appears in the committee inbox and they get notified of the decision.
-- **Events:** no duplicate registrations, no registering beyond capacity (there's no waitlist) and no registering for past events. Attendee and member counts are derived from the seeded figures plus demo actions. Registered events can be exported as `.ics`.
-- **Committee actions** (announcements, events, profile edits) are checked against the acting account's society and validated with Zod (lengths, end time after start, capacity of at least 1, no past dates).
-- **Notifications** are in-app only and follow the toggles in Settings. Identical unread notifications aren't repeated. There's no email or push delivery.
-- **Member requests:** members send a structured request (category, priority, details) to a society's committee and track it from Open → In progress → Resolved. Only the sender and that society's committee can see it; only the committee can assign, change status or resolve, and resolving needs a note the member sees. Rules are in `demo-rules.ts` like everything else.
-- **Discussions** are saved in this browser only and aren't real-time.
-- **Calls:** with LiveKit configured (see below), people on different devices join the same room for real, and everyone's captions feed one transcript and recap. Without it, your camera and mic are real but the other participants are scripted. Recaps fall back to a labelled keyword summary when the AI isn't available.
-- **Shared vs. per-browser:** live calls are the only thing shared between devices. Requests, memberships, events and messages stay in each browser, so demo those on one laptop by switching accounts.
+The local stack's settings are in `dev/supabase/config.toml`. The `supabase/config.toml` at the repo root belongs to Lovable Cloud, so leave it alone.
 
-To move to a real backend, re-implement the `demo-rules.ts` checks on the server and in database policies (for example Supabase row-level security). They shouldn't stay client-side only.
+## Checks
+
+```bash
+bun run typecheck
+bun run test
+bun run build
+bun run lint     # currently fails on about 2,500 Prettier formatting errors; `bun run format` fixes them
+```
+
+CI runs typecheck, tests and build on every pull request and every push to `main` (`.github/workflows/ci.yml`). The unit tests cover helpers and rendering only. Nothing tests the database rules yet.
+
+## Environment variables
+
+| Variable | Where it lives | Used for |
+|---|---|---|
+| `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` | `.env` (committed, public) | Browser database client |
+| `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` | `.env` (committed, public) | Server functions acting as the signed-in user |
+| `SUPABASE_SERVICE_ROLE_KEY` | Lovable Cloud secrets | Server functions that bypass row-level security: call tokens, recaps, AI quotas |
+| `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET` | Hosting environment | Live video calls. Without them, calls show "not available". |
+| `LOVABLE_API_KEY` | Provided by Lovable hosting | AI recaps, captions and recommendations. Without it, recaps fall back to a keyword summary. |
+
+`.env` is committed on purpose: published builds read it and break without it. It must only ever hold public values. Put secrets and local overrides in `.env.local`. [`.env.example`](.env.example) lists the server-only variables.
+
+## Database changes
+
+Migrations are plain SQL files in `drizzle/migrations/`. Drizzle is only the migration runner (`drizzle/schema.ts` is intentionally blank), and Lovable applies the migrations to Lovable Cloud.
+
+To add one by hand, create the next numbered file, add a matching entry to `drizzle/migrations/meta/_journal.json`, and run `bun run db:reset` to check it applies on a clean database. Then confirm in Lovable that it reached production. We haven't verified how Lovable picks up hand-written migrations pushed from GitHub.
+
+## Deploying
+
+The app is hosted by Lovable, which publishes from the GitHub branch it is connected to (`main`). A plain `bun run build` targets Cloudflare Workers (`.output/nitro.json` shows preset `cloudflare-module`).
+
+Older notes described deploying to Vercel. That hasn't been tested since the move to Lovable Cloud. It would at least need `SUPABASE_SERVICE_ROLE_KEY` and the LiveKit variables set in Vercel.
 
 ## Official TU Dublin society data
 
-The society directory is populated from the public [TU Dublin Societies site](https://societies.tudublin.ie/societies/). A Scrapy crawler (kept outside this repo, in `student-society-spot-extractor/tud_scrapy`) collects every society's profile, and `build_socconnect_seed.py` turns the result into a migration (`drizzle/migrations/0006_official_tud_societies.sql`) that:
+The society directory comes from the public [TU Dublin Societies site](https://societies.tudublin.ie/societies/). A Scrapy crawler kept outside this repo (`student-society-spot-extractor/tud_scrapy`) collects each society's profile, and `build_socconnect_seed.py` turns the result into `drizzle/migrations/0006_official_tud_societies.sql`. That migration:
 
-- adds official-data columns to `societies`: `campus`, `logo_url`, `banner_url`, `join_url` (MyStudentLife), `official_url`, `contact_email`, `links`, `extra_sections` and `source` / `source_id` / `source_synced_at` / `source_snapshot`;
+- adds official-data columns to `societies` (campus, logo and banner URLs, MyStudentLife join URL, official URL, contact email, links, extra sections, and source tracking fields);
 - upserts the 67 societies, matched on `(source, source_id)`, and adds interest tags for recommendations;
-- can be re-generated and re-applied to refresh the data. Committee edits to the tagline, description and meeting time are kept, and societies that disappear from the source are never deleted automatically.
+- can be regenerated and re-applied. Committee edits to the tagline, description and meeting time survive a refresh, and societies that disappear from the source are never deleted automatically.
 
-Society pages show the official logo, banner, campus, contact email, social links and a "Join on MyStudentLife" button. Student-number email addresses, phone numbers and committee names from the source site are not imported.
+Student-number email addresses, phone numbers and committee names from the source site are not imported. Logos and banners are linked from the official site rather than copied, because we haven't confirmed the right to republish them.
 
-## Live video calls (LiveKit)
+## Video calls
 
-Society calls are real multi-person video calls when LiveKit is configured. Without it they fall back to a demo with simulated participants, so nothing breaks.
+Society calls are real multi-person calls when the LiveKit variables are set. Create a project at [LiveKit Cloud](https://cloud.livekit.io) and copy its URL, API key and secret. For local runs, put them in `.env.local`.
 
-1. Create a free project at [LiveKit Cloud](https://cloud.livekit.io) and copy its **URL**, **API key** and **API secret**.
-2. Locally: `cp .env.example .env` and fill in `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`.
-3. When hosted: add the same three variables to the hosting provider's environment variables (never to `VITE_*` variables or committed files).
+- Camera and microphone need HTTPS. Test on the deployed URL; `http://<your-ip>:8080` won't get camera access (only `localhost` is exempt).
+- Captions record 7-second audio clips while someone speaks and send them to the server for AI transcription. Spoken and typed lines are shared with everyone in the call and feed the recap. Anyone in the call can switch captions off.
+- Committees can create guest links (`/join/<code>`) that expire and have a use limit.
 
-The lobby shows **"Join as"** and **"Live call"** when it's working. Open the same call link on another device to join each other.
+## Known issues
 
-- **Camera and mic need HTTPS.** Use the deployed URL on other laptops. `http://<your-ip>:<port>` won't get camera access (only `localhost` is exempt).
-- **Live captions use the browser's speech recognition (Chrome/Edge).** In other browsers, type into the transcript box. Typed and spoken lines are shared with everyone in the call and feed the recap.
-- Use a society's built-in rooms (e.g. CompSoc → Calls → Planning huddle) for multi-device demos. Scheduled calls only exist in the browser that created them.
+- Returning users sometimes don't receive the sign-in email. See [`context/sign-in-email-bug.md`](context/sign-in-email-bug.md).
+- Single university only. TU Dublin is hard-coded in the sign-up trigger and in about a dozen source files.
+- The October 2026 audit found several access-control and privacy problems that need fixing before a pilot. See [`context/roadmap.md`](context/roadmap.md).
 
-## Deploying to Vercel
-
-The app builds for Vercel without extra configuration: Nitro detects Vercel and outputs a Node serverless function.
-
-1. Import the GitHub repo in Vercel and keep the default settings.
-2. Add environment variables: `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`.
-3. Deploy. Vercel gives you an HTTPS URL that works on any laptop.
-
-AI recaps use the Lovable AI gateway (`LOVABLE_API_KEY`), which is provided on Lovable hosting. On Vercel without that key, recaps still work as a labelled basic summary.
-
-## Demo walkthrough
-
-A 3–4 minute flow that only uses working features (reset the demo data first):
-
-1. **Welcome → Explore as a student** (Alex). Home shows registrations, announcements and recommendations.
-2. **Discover Societies** → open **CompSoc** → **Joined → Leave**. CompSoc needs approval, so click **Request to join**. The button now shows *Pending · cancel*.
-3. Open **Events** → *Halloween LAN Party* shows **Event full** (capacity is enforced). Register for *Open Jam Night* and download the `.ics` file.
-4. Profile menu → **Jordan Lee · Committee**. The **Committee** page lists Alex's request. **Approve** it: the member count goes up and it shows under *Recently reviewed*. **Decline** a different request to show it doesn't add a member.
-5. Post an announcement and create an event. Try an end time before the start time to show the validation.
-6. Switch back to Alex. The bell shows *"You're in! CompSoc approved your request"* and the new announcement.
-7. **CompSoc → Contact committee** → send *"Can I borrow a laptop for Hack Night?"*. It opens on its own page as **Open**.
-8. Switch to Jordan → **Request Inbox** → open it → assign it to Priya → **Mark in progress** → reply → resolve it with a note.
-9. Switch back to Alex. The bell shows *"Your request was resolved"*, and the request shows the resolution and the full timeline.
-10. **Society Pulse** → pick two societies → explore a curated idea (labelled as a proposal, not a confirmed event).
-11. **Calls** → CompSoc → *Planning huddle*. With LiveKit configured, open the same room on a second laptop (deployed HTTPS URL) and talk. Otherwise the other participants are simulated. Leave to get the recap.
-
-Say clearly that the data is fictional and stored only in this browser.
-
-## Repository structure
-
-The exact structure depends on the generated implementation. A typical frontend structure may look like:
+## Project layout
 
 ```text
 src/
-├── components/    # Shared UI components
-├── pages/         # Route-level pages
-├── data/          # Demo data and seed content
-├── types/         # Shared TypeScript domain types
-├── hooks/         # Reusable React hooks
-├── lib/           # Utilities and integration helpers
-└── ...
+  routes/             pages (file-based routing); signed-in pages live in _authenticated/
+  components/         app components; ui/ holds generated shadcn components
+  lib/api/            the single data layer: loads data, runs database functions
+  lib/*.functions.ts  server functions (calls, guest links, AI)
+  lib/*.server.ts     server-only helpers (LiveKit, AI gateway)
+  integrations/       Supabase and Lovable clients, generated by Lovable (don't edit)
+  test/               Vitest tests
+drizzle/migrations/   database schema, policies and functions as SQL
+dev/                  local Supabase stack and dev scripts
+context/              notes for whoever picks up the work next
 ```
-
-Update this section to reflect the actual repository layout.
-
-## Data, privacy, and security
-
-- Use sample or explicitly consented data for demonstrations.
-- Do not commit passwords, API keys, access tokens, or other secrets.
-- Configure authentication and authorisation on the server when backend functionality is added.
-- Hiding a button in the frontend is not a security boundary.
-- Restrict society committee actions to authorised users in the backend.
-- Avoid exposing private member details in public society pages.
-- Verify society and event information before presenting it as official.
-
-Microsoft sign-in is an intended direction for university access, but it requires a properly configured identity application and appropriate account/tenant restrictions. A demo role switcher is not real authentication.
-
-## Roadmap
-
-- [ ] Society directory, search, and filters
-- [ ] Society profiles and membership flows
-- [ ] Unified announcements and communications
-- [ ] Event discovery and registration
-- [ ] Committee workspace and management actions
-- [ ] Society Pulse collaboration discovery
-- [ ] Microsoft university-account authentication
-- [ ] Persistent database and server-side authorisation
-- [ ] Real-time discussions and notifications, if in scope
-- [ ] Automated tests for core user journeys
-- [ ] Deployment and setup documentation
-
-Adjust the checklist to reflect the actual state of the project.
-
-## Screenshots and demo
-
-Add screenshots or a short GIF here once the interface is ready.
-
-- **Live demo:** _Add URL when available_
-- **Demo video:** _Add URL when available_
-
-## Contributing
-
-This is a hackathon project. If contributing with the team:
-
-1. Create a branch for your change.
-2. Keep components and domain logic reasonably separated.
-3. Test the affected user journey.
-4. Do not commit secrets or real personal data.
-5. Update this README when setup steps, architecture, or feature status changes.
-
-## Team
-
-_Add team members and links here._
 
 ## License
 
-_No license has been specified yet. Add a license before distributing or reusing the project outside the team._
+No license has been chosen yet. Add one before anyone outside the team reuses the code.
+
+<!-- LOVABLE:BEGIN -->
+> [!IMPORTANT]
+> This project is connected to [Lovable](https://lovable.dev). Avoid rewriting
+> published git history — force pushing, or rebasing/amending/squashing commits
+> that are already pushed — as it rewrites history on Lovable's side and the
+> user will likely lose their project history.
+>
+> Commits you push to the connected branch sync back to Lovable and show up in
+> the editor, so keep the branch in a working state.
+<!-- LOVABLE:END -->
